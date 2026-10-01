@@ -5,19 +5,16 @@
 ```
 public/            сайт: index.html и папки комнат с картинками
 functions/api/     сервер: страна по IP, статистика, советы посетителей, модерация
+src/worker.js      точка входа Worker: /api/* → сервер, остальное → файлы из public/
+wrangler.jsonc     настройки Worker (папка с файлами, база D1)
 ```
 
-## Первая настройка на Cloudflare (один раз)
+Проект работает как Cloudflare Worker со статическими файлами и выкладывается сам из ветки `main`.
 
-1. **Проект.** В панели Cloudflare откройте Workers & Pages → Create → Pages → Connect to Git и выберите этот репозиторий.
-   - Framework preset: None
-   - Build command: оставить пустым
-   - Build output directory: `public`
-   - Нажмите Save and Deploy. Сайт появится по адресу вида `https://<имя>.pages.dev`.
-2. **База.** Storage & Databases → D1 → Create database, имя `tihaya`. Таблицы создадутся сами при первом запросе.
-3. **Привязка базы.** В проекте Pages: Settings → Bindings → Add → D1 database. Variable name `DB`, база `tihaya`.
-4. **Ключ владельца.** Settings → Variables and Secrets → Add. Тип Secret, имя `ADMIN_TOKEN`, значение — любой длинный пароль (от 12 символов). Никому его не пересылайте.
-5. **Передеплой.** Deployments → у последнего деплоя ⋯ → Retry deployment, чтобы привязки заработали.
+## Настройка (один раз)
+
+1. **База.** Storage & Databases → D1 → Create, имя `tihaya`. Её Database ID записан в `wrangler.jsonc` (раздел `d1_databases`). Таблицы создаются сами при первом запросе. Привязку в панели вручную не добавляйте: при каждом деплое Cloudflare берёт её из `wrangler.jsonc`.
+2. **Ключ владельца.** В Worker: Settings → Variables and Secrets → Add. Тип Secret, имя `ADMIN_TOKEN`, значение — длинный пароль (от 12 символов). Секреты переживают деплои.
 
 ## Статистика и модерация
 
