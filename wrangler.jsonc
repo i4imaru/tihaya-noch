@@ -8,6 +8,9 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
-  "observability": { "enabled": true }
-  // База D1 подключается здесь (d1_databases), секрет ADMIN_TOKEN задаётся в панели Cloudflare.
+  "observability": { "enabled": true },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "tihaya", "database_id": "e0886775-42f2-404e-9cd0-704f9bac35c3" }
+  ]
+  // Секрет ADMIN_TOKEN задаётся в панели Cloudflare: Settings → Variables and Secrets.
 }
