@@ -350,7 +350,7 @@ const db={doc:p=>({id:p.split('/').pop(),path:p,
   collection:c=>({limit:n=>({get:async()=>{const j=await call('GET','/list?c='+encodeURIComponent(c)+'&n='+n);const docs=j.docs.map(d=>snap(d.id,d.body));return {docs,size:docs.length,empty:!docs.length}}})})};
 let ownerP=null;const isOwner=()=>ownerP||(ownerP=tok()?call('GET','/admin/ping').then(()=>true,()=>false):Promise.resolve(false));
 const user={id:async()=>vid,isOwner,canEdit:isOwner,can:async()=>null};
-window.TN_API=true;window.TN_ADMIN={ping:()=>call('GET','/admin/ping').then(()=>true,()=>false),set:t=>{try{t?localStorage.setItem('tn_admin',t):localStorage.removeItem('tn_admin')}catch(e){}ownerP=null}};
+window.TN_API=true;window.TN_ADMIN={ping:()=>call('GET','/admin/ping').then(()=>true,()=>false),why:async()=>{try{const r=await fetch(A+'/admin/ping',{headers:H()});return (await r.json()).error||''}catch(e){return 'net'}},set:t=>{try{t?localStorage.setItem('tn_admin',t):localStorage.removeItem('tn_admin')}catch(e){}ownerP=null}};
 window.claude={use:async n=>n==='db'?db:n==='user'?user:null};
 })();
 </script>
@@ -1125,7 +1125,8 @@ function adminLogin(){if(!window.TN_ADMIN)return;let v=$('#adminVeil');if(!v){v=
     v.innerHTML='<form class="box" style="gap:12px"><h2>Вход владельца</h2><p>Ключ из настроек Cloudflare (ADMIN_TOKEN). Он сохранится только в этом браузере.</p><input type="password" autocomplete="current-password" style="font:15px var(--body);color:var(--ink);background:rgba(255,214,170,.05);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%;box-sizing:border-box"><p class="msg" role="status"></p><button class="primary" type="submit">Войти</button><button class="ghost" type="button">Отмена</button></form>';
     document.body.appendChild(v);const f=v.querySelector('form'),inp=v.querySelector('input'),msg=v.querySelector('.msg');
     v.querySelector('.ghost').onclick=()=>{v.hidden=true;history.replaceState(null,'',location.pathname)};
-    f.onsubmit=async e=>{e.preventDefault();TN_ADMIN.set(inp.value.trim());if(await TN_ADMIN.ping()){location.hash='stats';location.reload()}else{TN_ADMIN.set('');msg.textContent='Ключ не подошёл.'}}}
+    f.onsubmit=async e=>{e.preventDefault();TN_ADMIN.set(inp.value.trim());if(await TN_ADMIN.ping()){location.hash='stats';location.reload()}else{const w=TN_ADMIN.why?await TN_ADMIN.why():'';TN_ADMIN.set('');
+      msg.textContent=w==='not_set'?'На сервере ключ не задан: добавьте секрет ADMIN_TOKEN в настройках Worker (галочка Secret).':w==='too_short'?'Ключ на сервере короче 12 символов: задайте ADMIN_TOKEN подлиннее.':w==='net'?'Нет связи с сервером, попробуйте ещё раз.':'Ключ не подошёл: проверьте раскладку и регистр букв.'}}}
   v.hidden=false;v.querySelector('input').focus()}
 if(window.TN_ADMIN){const b=document.createElement('button');b.className='ghost';b.textContent='Выйти';b.onclick=()=>{TN_ADMIN.set('');location.hash='';location.reload()};$('#statsExport').after(b)}
 addEventListener('hashchange',()=>{const k=location.hash.slice(1);if(k==='admin'){adminLogin();return}if(k==='stats'){openStats();return}if(started&&k in IDX&&IDX[k]!==cur){hideHome();go(IDX[k],false,'hash')}});

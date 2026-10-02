@@ -21,11 +21,13 @@ async function ensure(db) {
   ready = true;
 }
 
+const adminToken = env => String(env.ADMIN_TOKEN || '').trim();
+
 function isAdmin(req, env) {
-  const t = String(env.ADMIN_TOKEN || '');
+  const t = adminToken(env);
   if (t.length < 12) return false;
   const h = req.headers.get('authorization') || '';
-  const g = h.startsWith('Bearer ') ? h.slice(7) : '';
+  const g = (h.startsWith('Bearer ') ? h.slice(7) : '').trim();
   if (g.length !== t.length) return false;
   let x = 0;
   for (let i = 0; i < t.length; i++) x |= g.charCodeAt(i) ^ t.charCodeAt(i);
@@ -69,7 +71,12 @@ export async function onRequest({ request, env, params }) {
   const admin = isAdmin(request, env);
   const vid = request.headers.get('x-tn-vid') || '';
 
-  if (route === 'admin/ping') return admin ? J({ ok: true }) : J({ error: 'forbidden' }, 403);
+  if (route === 'admin/ping') {
+    if (admin) return J({ ok: true });
+    // tells the sign-in form whether the key is missing on the server or just doesn't match (never reveals the key)
+    const t = adminToken(env);
+    return J({ error: !t ? 'not_set' : t.length < 12 ? 'too_short' : 'forbidden' }, 403);
+  }
 
   if (route === 'doc') {
     const P = parsePath(url.searchParams.get('p'));
