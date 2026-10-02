@@ -808,7 +808,10 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&started&&
 function setA(p,v,tc=.25){if(AC&&p)p.setTargetAtTime(v,AC.currentTime,tc)}
 
 /* ---------- pointer ---------- */
-const mouse={x:0,y:0,sx:0,sy:0};let lastP=null,pdown=false,down0=null,interacted=false;
+const mouse={x:0,y:0,sx:0,sy:0};
+/* idle sway: when nobody touches the mouse/keys for a few seconds the room drifts left and right by itself, very slowly */
+const idle={last:performance.now(),k:0,t:0};const idleWake=()=>{idle.last=performance.now()};
+['pointermove','pointerdown','keydown','wheel','touchstart'].forEach(ev=>addEventListener(ev,idleWake,{passive:true}));let lastP=null,pdown=false,down0=null,interacted=false;
 function toImg(e){const r=canvas.getBoundingClientRect();const px=(e.clientX-r.left)/r.width-.5,py=.5-(e.clientY-r.top)/r.height;
   mouse.x=px*2;mouse.y=py*2;return [U.uCenter.value.x+px*U.uVis.value.x,1-(U.uCenter.value.y+py*U.uVis.value.y)]}
 const ell=(p,c,rx,ry)=>((p[0]-c.x)/rx)**2+((p[1]-c.y)/ry)**2<1;
@@ -1223,7 +1226,12 @@ function frame(){
   S.rainLv=lerp(S.rainLv,S.rain?1:0,1-Math.exp(-dt*.8));S.pet=Math.max(0,S.pet-dt*.3);
   const par=reduce?0:1-night*.7;
   if(tilt.on&&!pdown&&performance.now()-tilt.last<1500){mouse.x=tilt.x;mouse.y=tilt.y}
-  mouse.sx=lerp(mouse.sx,mouse.x*par,1-Math.exp(-dt*1.6));mouse.sy=lerp(mouse.sy,mouse.y*par,1-Math.exp(-dt*1.6));
+  const tiltLive=tilt.on&&performance.now()-tilt.last<3000;
+  const idleWant=!tiltLive&&!pdown&&!document.hidden&&performance.now()-idle.last>5000?1:0;
+  idle.k=lerp(idle.k,idleWant,1-Math.exp(-dt*(idleWant?.35:2)));
+  let ex=mouse.x,ey=mouse.y;
+  if(idle.k>.002){idle.t+=dt;ex=lerp(ex,Math.sin(idle.t*.16)*.85,idle.k);ey=lerp(ey,Math.sin(idle.t*.09+1)*.22,idle.k)}else idle.t=0;
+  mouse.sx=lerp(mouse.sx,ex*par,1-Math.exp(-dt*1.6));mouse.sy=lerp(mouse.sy,ey*par,1-Math.exp(-dt*1.6));
   U.uOff.value.set(mouse.sx+Math.sin(t*.11)*.15*par,mouse.sy*.6+Math.sin(t*.17)*.08*par);
   U.uT.value=t;U.uLamp.value=S.lampLv;U.uTV.value=S.tvLv;U.uTVfl.value=.75+Math.random()*.25;U.uPet.value=S.pet;U.uRain.value=S.rainLv;
   U.uNight.value=night;U.uExp.value=1-night*.45;
