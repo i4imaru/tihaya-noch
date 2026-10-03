@@ -30,5 +30,5 @@
 ## radio1.mp3, radio2.mp3
 Original instrumental pieces composed and synthesised for this site (synth-pop in the style of the 80s, a slow ballad in the style of the 90s). No samples; free to use as part of the site.
 
-## croaks.mp3
-Eight single calls cut from a Pacific treefrog recording (freesound_community, Pixabay Content License); used as sparse one-shots in the Japan room.
+## croak2.mp3
+Ten single croaks cut from dragon-studio "frog croaking sound effect" (Pixabay Content License); sparse one-shots in the dacha, Japan, stilt-house and India rooms.
