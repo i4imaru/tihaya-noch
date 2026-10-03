@@ -663,7 +663,7 @@ function initAudio(){
   AU.rainH=gain(0);loop().connect(filt('highpass',1800)).connect(filt('lowpass',7000)).connect(AU.rainH).connect(master);
   // recorded loops from /audio (royalty-free, see public/audio/CREDITS.md); the synth above plays until a file has loaded or if it fails
   AU.buf={};AU.rReal=0;AU.usedReal=false;AU.bedGs={};AU.bedOk={};AU.beds=[];
-  const loadBuf=name=>AU.buf[name]||(AU.buf[name]=fetch('/audio/'+name+'.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((ok,no)=>AC.decodeAudioData(a,ok,no))).catch(()=>null));
+  const loadBuf=name=>AU.buf[name]||(AU.buf[name]=fetch('/audio/'+name+'.mp3?v=2').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((ok,no)=>AC.decodeAudioData(a,ok,no))).catch(()=>null));
   const startLoop=(buf,dest)=>{const s=AC.createBufferSource();s.buffer=buf;s.loop=true;s.connect(dest);s.start(0,Math.random()*buf.duration);return s};
   AU.rg=[gain(0),gain(0),gain(0)];AU.rg.forEach(g=>g.connect(master));AU.rStarted={};
   loadBuf('purr').then(b=>{if(b){AU.purrR=gain(0);AU.purrR.connect(master);startLoop(b,AU.purrR)}});
@@ -807,16 +807,41 @@ function initAudio(){
   const QUIET_IN_RAIN=new Set(['cricket','suzu','katydid','maemi','coqui','paddy','moth','gecko']);
   let stops=[],plan=[],spec=null,lastTick=0;
   // which recorded night bed each room uses, and how loud (crickets are quieter where the city is louder)
-  const NIGHT={room:[['night1',.4]],dacha:[['night2',.75],['frogs',.4]],ca:[['night1',.6]],korea:[['night2',.35]],china:[['night2',.6]],sea:[['night1',.4],['frogs',.45]],india:[['night2',.55],['frogs',.3]],usa:[['night1',.55]],latam:[['night1',.35]],jp:[['frogs',.4]]};
-  AU.scene=key=>{stops.forEach(f=>f());stops=[];spec=SPEC[key]||{ev:[],beds:[]};const t=AC.currentTime;
+  const NIGHT={
+    room:[['night1',.4],['city',.25],['fridge',.6],['clock',.5]],
+    dacha:[['night2',.75],['frogs',.4],['clock',.4]],
+    ca:[['night1',.6],['stream',.7]],
+    korea:[['night2',.35],['city',.6],['clock',.4]],
+    china:[['night2',.6],['city',.35],['clock',.4]],
+    sea:[['night1',.4],['frogs',.45]],
+    india:[['night2',.55],['frogs',.3]],
+    usa:[['night1',.35],['katydid',.5],['clock',.4]],
+    latam:[['night1',.3],['frogs2',.5],['clock',.4]],
+    jp:[['frogs',.4]]};
+  // recorded one-shots replace the synthetic ones once loaded; they play through the same near/far room as the synth
+  const SAMP={owl:{g:.55,far:1},dog:{g:.5,far:1},train:{g:.6,far:1},moto:{g:.6,far:1},bell:{g:.5,far:1},leaves:{g:.7},gecko:{g:.8,win:5}};
+  AU.sb={};
+  Object.keys(SAMP).forEach(n=>{const synth=L[n],c=SAMP[n];
+    L[n]=o=>{const b=AU.sb[n];if(!b){synth(o);return}
+      const s=AC.createBufferSource(),t=AC.currentTime+.02,g=gain(c.g);s.buffer=b;s.playbackRate.value=R(.95,1.05);s.connect(g).connect(out(!!c.far,R(-.8,.8)));
+      if(c.win){const w=Math.min(c.win,b.duration);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(c.g,t+.4);g.gain.setValueAtTime(c.g,t+w-.5);g.gain.linearRampToValueAtTime(0,t+w);s.start(t,R(0,Math.max(0,b.duration-w)),w)}else s.start(t)}});
+  const synthChime=sfx.chime;
+  sfx.chime=(v=1)=>{const b=AU.sb.chime;if(!b){synthChime(v);return}const s=AC.createBufferSource(),g=gain(.5*Math.min(1.3,v));s.buffer=b;s.playbackRate.value=R(.96,1.04);s.connect(g).connect(out(false,R(-.4,.4)));s.start(AC.currentTime+.02)};
+  loadBuf('chime').then(b=>{if(b)AU.sb.chime=b});
+  // synthetic ambience beds that have a recording are only used if that recording fails to load
+  const REPL={fridge:'fridge',city:'city',aryk:'stream'};let sceneTok=0;
+  const hasBed=n=>AU.beds.some(b=>b[0]===n&&AU.bedOk[n]);
+  AU.scene=key=>{stops.forEach(f=>f());stops=[];spec=SPEC[key]||{ev:[],beds:[]};const t=AC.currentTime,tok=++sceneTok;
     AU.beds=NIGHT[key]||[];AU.beds.forEach(b=>AU.needBed(b[0]));
-    stops=(spec.beds||[]).map(b=>BEDS[b]());
+    (spec.beds||[]).forEach(b=>{const rn=REPL[b];if(rn)loadBuf(rn).then(buf=>{if(!buf&&tok===sceneTok)stops.push(BEDS[b]())});else stops.push(BEDS[b]())});
+    spec.ev.forEach(([n])=>{if(SAMP[n]&&!AU.sb[n])loadBuf(n).then(b=>{if(b)AU.sb[n]=b})});
     plan=spec.ev.map(([n,rate,o,first])=>({n,rate,o:o||{},next:t+(first?R(first[0],first[1]):-Math.log(Math.random())/rate)}))};
   // a recorded bed replaces the matching synthetic voices of that room
-  const bedCovers=n=>AU.beds.some(b=>AU.bedOk[b[0]]&&((b[0][0]==='n'&&n==='cricket')||(b[0]==='frogs'&&(n==='frog'||n==='paddy'||n==='bullfrog'))));
+  const COVER={cricket:['night1','night2'],frog:['frogs'],paddy:['frogs'],bullfrog:['frogs'],coqui:['frogs2'],katydid:['katydid']};
+  const bedCovers=n=>(COVER[n]||[]).some(hasBed);
   setInterval(()=>{if(!C||!spec||TM.phase==='asleep'||switching||AC.state!=='running')return;const t=AC.currentTime;
     const calm=TM.on?1-TM.prog*.6:1;
-    if(spec.clock&&t-lastTick>=1){lastTick=t;sfx.tick()}
+    if(spec.clock&&!hasBed('clock')&&t-lastTick>=1){lastTick=t;sfx.tick()}
     for(const e of plan){if(t<e.next)continue;const r=e.rate*calm*(QUIET_IN_RAIN.has(e.n)?1-.7*S.rainLv:1);
       if(Math.random()<calm*(QUIET_IN_RAIN.has(e.n)?1-.6*S.rainLv:1)&&!bedCovers(e.n))try{L[e.n](e.o)}catch(err){}
       e.next=t+Math.max(.05,-Math.log(Math.random()||1e-6)/Math.max(r,1e-4))}},100);
@@ -1298,7 +1323,7 @@ function frame(){
   if(AC&&!switching){const realNow=S.rain>0&&((AU.rReal>>(S.rain-1))&1);if(S.rain>0)AU.usedReal=!!realNow;
     for(let i=0;i<3;i++)setA(AU.rg[i].gain,S.rain===i+1&&((AU.rReal>>i)&1)?1:0,.7);
     const synthOff=AU.usedReal;setA(AU.rainG.gain,synthOff?0:.16*S.rainLv);setA(AU.rainH.gain,synthOff?0:.05*Math.max(0,(S.rainLv-.45)/.55));
-    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs){const b=AU.beds.find(x=>x[0]===nm);setA(AU.bedGs[nm].gain,b?b[1]*(nm[0]==='n'?1-.6*S.rainLv:1)*calmB:0,.8)}if(AU.purrR){setA(AU.purrR.gain,pu);setA(AU.purrG.gain,0)}else setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
+    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs){const b=AU.beds.find(x=>x[0]===nm);setA(AU.bedGs[nm].gain,b?b[1]*(nm==='night1'||nm==='night2'||nm==='katydid'?1-.6*S.rainLv:1)*calmB:0,.8)}if(AU.purrR){setA(AU.purrR.gain,pu);setA(AU.purrG.gain,0)}else setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
     setA(master.gain,muted?0:.9*vol,.4)}
   renderer.render(scene,cam);
 }
