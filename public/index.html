@@ -630,7 +630,7 @@ const TM={on:false,t0:0,dur:0,prog:0,phase:'awake',lampBefore:true};
 const btn=k=>document.querySelector(`#bar [data-k="${k}"]`);
 const RAIN_LV=[0,.4,.7,1];
 function sync(){for(const k of ['lamp','tv'])btn(k).setAttribute('aria-pressed',String(S[k]));btn('rain').setAttribute('aria-pressed',String(S.rain>0));btn('rain').dataset.lv=S.rain}
-function toggle(k){if(k==='rain'){S.rain=(S.rain+1)%4;track('act',{k,lv:S.rain});sync();toast(t('ui.rainL'+S.rain));return}
+function toggle(k){if(k==='rain'){S.rain=(S.rain+1)%4;track('act',{k,lv:S.rain});sync();toast(t('ui.rainL'+S.rain));if(S.rain&&AU.loadRain)AU.loadRain(S.rain);return}
   S[k]=!S[k];track('act',{k});sfx.click();sync();if(k==='lamp'&&TM.on)TM.lampBefore=S.lamp}
 document.querySelectorAll('#bar [data-k]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.k)));
 function toast(t){const el=$('#toast');el.textContent=t;el.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.opacity=0,2600)}
@@ -661,6 +661,13 @@ function initAudio(){
   const gain=v=>{const g=AC.createGain();g.gain.value=v;return g};
   AU.rainG=gain(0);loop().connect(filt('highpass',300)).connect(filt('lowpass',1400)).connect(AU.rainG).connect(master);
   AU.rainH=gain(0);loop().connect(filt('highpass',1800)).connect(filt('lowpass',7000)).connect(AU.rainH).connect(master);
+  // recorded loops from /audio (royalty-free, see public/audio/CREDITS.md); the synth above plays until a file has loaded or if it fails
+  AU.buf={};AU.rReal=0;AU.usedReal=false;AU.bedGs={};AU.bedOk={};AU.bedKey=null;AU.bedBase=0;
+  const loadBuf=name=>AU.buf[name]||(AU.buf[name]=fetch('/audio/'+name+'.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((ok,no)=>AC.decodeAudioData(a,ok,no))).catch(()=>null));
+  const startLoop=(buf,dest)=>{const s=AC.createBufferSource();s.buffer=buf;s.loop=true;s.connect(dest);s.start(0,Math.random()*buf.duration);return s};
+  AU.rg=[gain(0),gain(0),gain(0)];AU.rg.forEach(g=>g.connect(master));AU.rStarted={};
+  AU.loadRain=lv=>{if(AU.rStarted[lv])return;AU.rStarted[lv]=1;loadBuf('rain'+lv).then(b=>{if(b){startLoop(b,AU.rg[lv-1]);AU.rReal|=1<<(lv-1)}else AU.rStarted[lv]=0})};
+  AU.needBed=name=>{if(AU.bedGs[name])return;const g=gain(0);g.connect(master);AU.bedGs[name]=g;loadBuf(name).then(b=>{if(b){startLoop(b,g);AU.bedOk[name]=1}else delete AU.bedGs[name]})};
   AU.purrG=gain(0);const pmod=gain(.5),lfo=AC.createOscillator(),la=gain(.5);lfo.frequency.value=24;lfo.connect(la).connect(pmod.gain);lfo.start();
   loop().connect(filt('lowpass',170)).connect(pmod).connect(AU.purrG).connect(master);
   AU.tvG=gain(0);loop().connect(filt('bandpass',3800,.6)).connect(AU.tvG).connect(master);
@@ -798,14 +805,17 @@ function initAudio(){
   };
   const QUIET_IN_RAIN=new Set(['cricket','suzu','katydid','maemi','coqui','paddy','moth','gecko']);
   let stops=[],plan=[],spec=null,lastTick=0;
+  // which recorded night bed each room uses, and how loud (crickets are quieter where the city is louder)
+  const NIGHT={room:['night1',.4],dacha:['night2',.75],ca:['night1',.6],korea:['night2',.35],china:['night2',.6],sea:['night1',.4],india:['night2',.55],usa:['night1',.55],latam:['night1',.35]};
   AU.scene=key=>{stops.forEach(f=>f());stops=[];spec=SPEC[key]||{ev:[],beds:[]};const t=AC.currentTime;
+    const nb=NIGHT[key];AU.bedKey=nb?nb[0]:null;AU.bedBase=nb?nb[1]:0;if(nb)AU.needBed(nb[0]);
     stops=(spec.beds||[]).map(b=>BEDS[b]());
     plan=spec.ev.map(([n,rate,o,first])=>({n,rate,o:o||{},next:t+(first?R(first[0],first[1]):-Math.log(Math.random())/rate)}))};
   setInterval(()=>{if(!C||!spec||TM.phase==='asleep'||switching||AC.state!=='running')return;const t=AC.currentTime;
     const calm=TM.on?1-TM.prog*.6:1;
     if(spec.clock&&t-lastTick>=1){lastTick=t;sfx.tick()}
     for(const e of plan){if(t<e.next)continue;const r=e.rate*calm*(QUIET_IN_RAIN.has(e.n)?1-.7*S.rainLv:1);
-      if(Math.random()<calm*(QUIET_IN_RAIN.has(e.n)?1-.6*S.rainLv:1))try{L[e.n](e.o)}catch(err){}
+      if(Math.random()<calm*(QUIET_IN_RAIN.has(e.n)?1-.6*S.rainLv:1)&&!(e.n==='cricket'&&AU.bedKey&&AU.bedOk[AU.bedKey]))try{L[e.n](e.o)}catch(err){}
       e.next=t+Math.max(.05,-Math.log(Math.random()||1e-6)/Math.max(r,1e-4))}},100);
 }
 /* Phones: iOS keeps Web Audio silent with the ring/silent switch off and after system dialogs; a looping silent
@@ -1282,7 +1292,10 @@ function frame(){
   S.nextEar-=dt;if(S.nextEar<0){S.ear=1;S.nextEar=(2.5+Math.random()*5)*(1+sl*3)}S.ear=Math.max(0,S.ear-dt*5);U.uEar.value=Math.sin(S.ear*Math.PI)*.35;
   S.tailAmp=lerp(S.tailAmp||1,1+pu*1.2,1-Math.exp(-dt*1.2));
   U.uTail.value=(Math.sin(S.phT)*.09+Math.max(0,Math.sin(t*.37))*Math.sin(S.phW)*.05*S.tailAmp)*(1-sl*.8);
-  if(AC&&!switching){setA(AU.rainG.gain,.16*S.rainLv);setA(AU.rainH.gain,.05*Math.max(0,(S.rainLv-.45)/.55));setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
+  if(AC&&!switching){const realNow=S.rain>0&&((AU.rReal>>(S.rain-1))&1);if(S.rain>0)AU.usedReal=!!realNow;
+    for(let i=0;i<3;i++)setA(AU.rg[i].gain,S.rain===i+1&&((AU.rReal>>i)&1)?1:0,.7);
+    const synthOff=AU.usedReal;setA(AU.rainG.gain,synthOff?0:.16*S.rainLv);setA(AU.rainH.gain,synthOff?0:.05*Math.max(0,(S.rainLv-.45)/.55));
+    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs)setA(AU.bedGs[nm].gain,AU.bedKey===nm?AU.bedBase*(1-.6*S.rainLv)*calmB:0,.8);setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
     setA(master.gain,muted?0:.9*vol,.4)}
   renderer.render(scene,cam);
 }
