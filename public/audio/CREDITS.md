@@ -9,3 +9,4 @@
 | rain2.mp3, rain3.mp3 | boons_freak — «rain sound» (188158), разные фрагменты и обработка |
 | night1.mp3 | freesound_community — «ambience night field cricket 01» (7015) |
 | night2.mp3 | freesound_community — «night ambience» (17064) |
+| frogs.mp3 | dragon-studio — «frogs croaking ambience» (329850) |

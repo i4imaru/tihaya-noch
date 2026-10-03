@@ -662,7 +662,7 @@ function initAudio(){
   AU.rainG=gain(0);loop().connect(filt('highpass',300)).connect(filt('lowpass',1400)).connect(AU.rainG).connect(master);
   AU.rainH=gain(0);loop().connect(filt('highpass',1800)).connect(filt('lowpass',7000)).connect(AU.rainH).connect(master);
   // recorded loops from /audio (royalty-free, see public/audio/CREDITS.md); the synth above plays until a file has loaded or if it fails
-  AU.buf={};AU.rReal=0;AU.usedReal=false;AU.bedGs={};AU.bedOk={};AU.bedKey=null;AU.bedBase=0;
+  AU.buf={};AU.rReal=0;AU.usedReal=false;AU.bedGs={};AU.bedOk={};AU.beds=[];
   const loadBuf=name=>AU.buf[name]||(AU.buf[name]=fetch('/audio/'+name+'.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((ok,no)=>AC.decodeAudioData(a,ok,no))).catch(()=>null));
   const startLoop=(buf,dest)=>{const s=AC.createBufferSource();s.buffer=buf;s.loop=true;s.connect(dest);s.start(0,Math.random()*buf.duration);return s};
   AU.rg=[gain(0),gain(0),gain(0)];AU.rg.forEach(g=>g.connect(master));AU.rStarted={};
@@ -806,16 +806,18 @@ function initAudio(){
   const QUIET_IN_RAIN=new Set(['cricket','suzu','katydid','maemi','coqui','paddy','moth','gecko']);
   let stops=[],plan=[],spec=null,lastTick=0;
   // which recorded night bed each room uses, and how loud (crickets are quieter where the city is louder)
-  const NIGHT={room:['night1',.4],dacha:['night2',.75],ca:['night1',.6],korea:['night2',.35],china:['night2',.6],sea:['night1',.4],india:['night2',.55],usa:['night1',.55],latam:['night1',.35]};
+  const NIGHT={room:[['night1',.4]],dacha:[['night2',.75],['frogs',.4]],ca:[['night1',.6]],korea:[['night2',.35]],china:[['night2',.6]],sea:[['night1',.4],['frogs',.45]],india:[['night2',.55],['frogs',.3]],usa:[['night1',.55]],latam:[['night1',.35]],jp:[['frogs',.4]]};
   AU.scene=key=>{stops.forEach(f=>f());stops=[];spec=SPEC[key]||{ev:[],beds:[]};const t=AC.currentTime;
-    const nb=NIGHT[key];AU.bedKey=nb?nb[0]:null;AU.bedBase=nb?nb[1]:0;if(nb)AU.needBed(nb[0]);
+    AU.beds=NIGHT[key]||[];AU.beds.forEach(b=>AU.needBed(b[0]));
     stops=(spec.beds||[]).map(b=>BEDS[b]());
     plan=spec.ev.map(([n,rate,o,first])=>({n,rate,o:o||{},next:t+(first?R(first[0],first[1]):-Math.log(Math.random())/rate)}))};
+  // a recorded bed replaces the matching synthetic voices of that room
+  const bedCovers=n=>AU.beds.some(b=>AU.bedOk[b[0]]&&((b[0][0]==='n'&&n==='cricket')||(b[0]==='frogs'&&(n==='frog'||n==='paddy'||n==='bullfrog'))));
   setInterval(()=>{if(!C||!spec||TM.phase==='asleep'||switching||AC.state!=='running')return;const t=AC.currentTime;
     const calm=TM.on?1-TM.prog*.6:1;
     if(spec.clock&&t-lastTick>=1){lastTick=t;sfx.tick()}
     for(const e of plan){if(t<e.next)continue;const r=e.rate*calm*(QUIET_IN_RAIN.has(e.n)?1-.7*S.rainLv:1);
-      if(Math.random()<calm*(QUIET_IN_RAIN.has(e.n)?1-.6*S.rainLv:1)&&!(e.n==='cricket'&&AU.bedKey&&AU.bedOk[AU.bedKey]))try{L[e.n](e.o)}catch(err){}
+      if(Math.random()<calm*(QUIET_IN_RAIN.has(e.n)?1-.6*S.rainLv:1)&&!bedCovers(e.n))try{L[e.n](e.o)}catch(err){}
       e.next=t+Math.max(.05,-Math.log(Math.random()||1e-6)/Math.max(r,1e-4))}},100);
 }
 /* Phones: iOS keeps Web Audio silent with the ring/silent switch off and after system dialogs; a looping silent
@@ -1295,7 +1297,7 @@ function frame(){
   if(AC&&!switching){const realNow=S.rain>0&&((AU.rReal>>(S.rain-1))&1);if(S.rain>0)AU.usedReal=!!realNow;
     for(let i=0;i<3;i++)setA(AU.rg[i].gain,S.rain===i+1&&((AU.rReal>>i)&1)?1:0,.7);
     const synthOff=AU.usedReal;setA(AU.rainG.gain,synthOff?0:.16*S.rainLv);setA(AU.rainH.gain,synthOff?0:.05*Math.max(0,(S.rainLv-.45)/.55));
-    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs)setA(AU.bedGs[nm].gain,AU.bedKey===nm?AU.bedBase*(1-.6*S.rainLv)*calmB:0,.8);setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
+    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs){const b=AU.beds.find(x=>x[0]===nm);setA(AU.bedGs[nm].gain,b?b[1]*(nm[0]==='n'?1-.6*S.rainLv:1)*calmB:0,.8)}setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
     setA(master.gain,muted?0:.9*vol,.4)}
   renderer.render(scene,cam);
 }
