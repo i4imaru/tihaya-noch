@@ -820,7 +820,7 @@ function initAudio(){
     sea:{beds:['cicada'],ev:[['gecko',1/35,0,[8,20]],['paddy',1.8],['cricket',.6,{f:4700}],['moto',1/95,0,[30,60]]]},
     india:{beds:[],ev:[['drip',1.1],['bullfrog',.3],['cricket',1,{f:4400}],['train',1/190,{s:'in'},[22,45]],['dog',1/90]]},
     usa:{clock:1,beds:[],ev:[['katydid',.45],['cricket',.9,{f:4300}],['train',1/190,{s:'us'},[22,45]],['dog',1/130]]},
-    latam:{clock:1,beds:[],ev:[['coqui',1.1],['cricket',.5,{f:4500}],['guitar',1/120,0,[18,36]],['dog',1/110]]},
+    latam:{clock:1,beds:[],ev:[['cricket',.9,{f:4500}],['guitar',1/120,0,[18,36]],['bell',1/150,0,[30,60]],['leaves',1/30],['dog',1/110]]},
   };
   const QUIET_IN_RAIN=new Set(['cricket','suzu','katydid','maemi','coqui','paddy','croak','moth','gecko']);
   let stops=[],plan=[],spec=null,lastTick=0;
@@ -834,7 +834,7 @@ function initAudio(){
     sea:[['night1',.4],['frogs',.45]],
     india:[['night2',.55],['frogs',.3]],
     usa:[['night1',.35],['katydid',.5],['clock',.4]],
-    latam:[['night1',.3],['frogs2',.5],['clock',.4]],
+    latam:[['night1',.5],['night2',.25],['clock',.4]],
     jp:[['night1',.2]]};
   // recorded one-shots replace the synthetic ones once loaded; they play through the same near/far room as the synth
   const SAMP={owl:{g:.55,far:1},dog:{g:.5,far:1},train:{g:.6,far:1},moto:{g:.6,far:1},bell:{g:.5,far:1},leaves:{g:.7},gecko:{g:.8,win:5}};
