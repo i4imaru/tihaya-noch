@@ -666,6 +666,7 @@ function initAudio(){
   const loadBuf=name=>AU.buf[name]||(AU.buf[name]=fetch('/audio/'+name+'.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((ok,no)=>AC.decodeAudioData(a,ok,no))).catch(()=>null));
   const startLoop=(buf,dest)=>{const s=AC.createBufferSource();s.buffer=buf;s.loop=true;s.connect(dest);s.start(0,Math.random()*buf.duration);return s};
   AU.rg=[gain(0),gain(0),gain(0)];AU.rg.forEach(g=>g.connect(master));AU.rStarted={};
+  loadBuf('purr').then(b=>{if(b){AU.purrR=gain(0);AU.purrR.connect(master);startLoop(b,AU.purrR)}});
   AU.loadRain=lv=>{if(AU.rStarted[lv])return;AU.rStarted[lv]=1;loadBuf('rain'+lv).then(b=>{if(b){startLoop(b,AU.rg[lv-1]);AU.rReal|=1<<(lv-1)}else AU.rStarted[lv]=0})};
   AU.needBed=name=>{if(AU.bedGs[name])return;const g=gain(0);g.connect(master);AU.bedGs[name]=g;loadBuf(name).then(b=>{if(b){startLoop(b,g);AU.bedOk[name]=1}else delete AU.bedGs[name]})};
   AU.purrG=gain(0);const pmod=gain(.5),lfo=AC.createOscillator(),la=gain(.5);lfo.frequency.value=24;lfo.connect(la).connect(pmod.gain);lfo.start();
@@ -1297,7 +1298,7 @@ function frame(){
   if(AC&&!switching){const realNow=S.rain>0&&((AU.rReal>>(S.rain-1))&1);if(S.rain>0)AU.usedReal=!!realNow;
     for(let i=0;i<3;i++)setA(AU.rg[i].gain,S.rain===i+1&&((AU.rReal>>i)&1)?1:0,.7);
     const synthOff=AU.usedReal;setA(AU.rainG.gain,synthOff?0:.16*S.rainLv);setA(AU.rainH.gain,synthOff?0:.05*Math.max(0,(S.rainLv-.45)/.55));
-    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs){const b=AU.beds.find(x=>x[0]===nm);setA(AU.bedGs[nm].gain,b?b[1]*(nm[0]==='n'?1-.6*S.rainLv:1)*calmB:0,.8)}setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
+    const calmB=TM.on?1-TM.prog*.6:1;for(const nm in AU.bedGs){const b=AU.beds.find(x=>x[0]===nm);setA(AU.bedGs[nm].gain,b?b[1]*(nm[0]==='n'?1-.6*S.rainLv:1)*calmB:0,.8)}if(AU.purrR){setA(AU.purrR.gain,pu);setA(AU.purrG.gain,0)}else setA(AU.purrG.gain,pu*1.7);setA(AU.tvG.gain,.012*S.tvLv);setA(AU.tvHum.gain,.004*S.tvLv);
     setA(master.gain,muted?0:.9*vol,.4)}
   renderer.render(scene,cam);
 }
