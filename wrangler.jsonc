@@ -9,6 +9,12 @@
     "run_worker_first": ["/api/*"]
   },
   "observability": { "enabled": true },
+  // Свой домен: Cloudflare сам создаёт DNS-запись и сертификат при деплое.
+  "routes": [
+    { "pattern": "tihaya.app", "custom_domain": true },
+    { "pattern": "www.tihaya.app", "custom_domain": true }
+  ],
+  "workers_dev": true,
   "keep_vars": true,
   "d1_databases": [
     { "binding": "DB", "database_name": "tihaya", "database_id": "e0886775-42f2-404e-9cd0-704f9bac35c3" }
