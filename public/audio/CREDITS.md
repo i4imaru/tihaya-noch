@@ -26,3 +26,6 @@
 | leaves.mp3 | soul_serenity_sounds — «leaves rustling» (236742) |
 | moto.mp3 | freesound_community — «motorcycle» (77112) |
 | gecko.mp3 | freesound_community — «microgecko latifi» (28743) |
+
+## radio1.mp3, radio2.mp3
+Original instrumental pieces composed and synthesised for this site (synth-pop in the style of the 80s, a slow ballad in the style of the 90s). No samples; free to use as part of the site.
