@@ -347,7 +347,7 @@ button,select{font-family:var(--body)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>window.TN_LAB={room:"lab/room"};</script>
+<script>window.TN_LAB={room:"lab/room"};window.TN_LAB_FR={room:"lab/room/fr"};</script>
 <script>// Own hosting: the same document API the page uses on claude.ai, served by /api (Cloudflare Pages Functions + D1).
 (()=>{const A='/api',AB='abcdefghijklmnopqrstuvwxyz0123456789';let vid=null;try{vid=localStorage.getItem('tn_vid')}catch(e){}
 if(!vid||!/^v_[a-z0-9]{20}$/.test(vid)){vid='v_'+Array.from(crypto.getRandomValues(new Uint8Array(20)),b=>AB[b%36]).join('');try{localStorage.setItem('tn_vid',vid)}catch(e){}}
@@ -444,6 +444,12 @@ const FILES=['plate_on.jpg','plate_off.jpg','out_on.jpg','out_off.jpg','maps.png
 const cache=new Map();
 const LAB=window.TN_LAB||null,MIP=/plate_|out_|cat_|cup_/;
 function loadTex(u){return new Promise(res=>{const t=loader.load(u,()=>res(t),undefined,()=>res(t));const mip=LAB&&renderer.capabilities.isWebGL2&&MIP.test(u);t.generateMipmaps=mip;t.minFilter=mip?THREE.LinearMipmapLinearFilter:THREE.LinearFilter;if(mip)t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());t.magFilter=THREE.LinearFilter;t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping})}
+const LABFR=window.TN_LAB_FR||null,FRM={};
+function framesFor(key){if(!LABFR||!LABFR[key])return null;if(FRM[key])return FRM[key];const dir=LABFR[key],F=FRM[key]={ready:false,n:0};
+  fetch(dir+'/fr.json').then(r=>r.json()).then(j=>{F.n=j.n;F.sh=j.sh;F.fs=j.fs||96;const id=i=>String(i).padStart(2,'0');
+    return Promise.all([...[...Array(j.n).keys()].flatMap(i=>[loadTex(dir+'/on_'+id(i)+'.jpg'),loadTex(dir+'/off_'+id(i)+'.jpg')]),
+      ...[...Array(j.n-1).keys()].flatMap(i=>[loadTex(dir+'/fab_'+id(i)+'.png'),loadTex(dir+'/fba_'+id(i)+'.png')])])}).then(a=>{const m=2*F.n,A=a.slice(0,m),B=a.slice(m);
+      F.on=A.filter((_,i)=>i%2==0);F.off=A.filter((_,i)=>i%2==1);F.fab=B.filter((_,i)=>i%2==0);F.fba=B.filter((_,i)=>i%2==1);F.ready=true}).catch(()=>{});return F}
 function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
@@ -465,11 +471,12 @@ const U={tImg:{value:null},tImgOff:{value:null},tOut:{value:null},tOutOff:{value
   uVis:{value:new THREE.Vector2(1,1)},uCenter:{value:new THREE.Vector2(.5,.5)},uOff:{value:new THREE.Vector2()},uFocus:{value:.55},uPar:{value:.028},
   uT:{value:0},uLamp:{value:1},uTV:{value:0},uTVfl:{value:1},uExp:{value:1},uPet:{value:0},uRain:{value:0},uWind:{value:.3},uNight:{value:0},
   uCurt:{value:[V4(),V4(),V4()]},uH:{value:new THREE.Matrix3()},uPond:{value:new THREE.Vector4(-9,-9,.01,.01)},uRip:{value:rip},
-  uLampP:{value:new THREE.Vector3()},uTVP:{value:new THREE.Vector3(-9,-9,1)},uLed:{value:new THREE.Vector4(-9,-9,.01,0)},uMoon:{value:new THREE.Vector3()},
+  uLampP:{value:new THREE.Vector3()},uTVP:{value:new THREE.Vector3(-9,-9,1)},uLed:{value:new THREE.Vector4(-9,-9,.01,0)},uFr:{value:0},uFs:{value:96},tFab:{value:null},tFba:{value:null},uShCat:{value:new THREE.Vector2()},uShCup:{value:new THREE.Vector2()},uShLamp:{value:new THREE.Vector2()},uShTv:{value:new THREE.Vector2()},uMoon:{value:new THREE.Vector3()},
   uImgA:{value:IMG.w/IMG.h},uRes:{value:new THREE.Vector2(1,1)}};
 
 /* ---------- per-room shader: the cat's anatomy is baked in ---------- */
 function fragFor(C){
+  const FR=!!C.frames;
   const A=C.A,T=A.tail,H=A.head,E=A.ear,B=A.body,SCL=A.scale||1,AN=A.anchor||[0,0],hasTV=!!C.R.tv,F=C.furin,P=C.R.pond;
   const SPK=C.sprinkler?`{vec2 Q=toPx(uvO)-${v2(C.sprinkler)};
     if(Q.x>-175.&&Q.x<175.&&Q.y>-120.&&Q.y<8.){float acc=0.;float th0=sin(uT*.42)*.55;
@@ -485,7 +492,7 @@ function fragFor(C){
      float w1=exp(-pow((q.x-sway)/(4.+y*.08),2.)),w2=exp(-pow((q.x-sway*1.4+6.)/(3.+y*.07),2.));
      float a=(w1+w2*.6)*smoothstep(0.,10.,y)*(1.-smoothstep(45.,85.,y))*(.55+.45*sin(y*.12-uT*1.6));
      c+=vec3(.55,.6,.72)*a*.09*(.6+.4*uLamp)*(1.-uNight);}}`:'';
-  const tv=hasTV?`{vec3 hp=uH*vec3(uv,1.);
+  const tv=hasTV?`{vec3 hp=uH*vec3(uv${FR?'+uShTv':''},1.);
     if(uTV>.001&&abs(hp.z)>1e-4){vec2 st=hp.xy/hp.z;vec2 q=st*2.-1.;
       vec2 qd=q*(1.+.09*dot(q,q));vec2 dd=abs(qd)-vec2(.74,.72);
       float sd=length(max(dd,0.))+min(max(dd.x,dd.y),0.)-.16;
@@ -494,7 +501,7 @@ function fragFor(C){
         pic*=1.-.55*smoothstep(.25,1.05,length(qd));
         pic+=vec3(.5,.55,.6)*.05*smoothstep(.3,-.5,qd.x+qd.y-.2)*smoothstep(-1.,.2,qd.y);
         c=mix(c,pic,mk*uTV);}}
-    float tvD=length(asp(uv-uTVP.xy))/uTVP.z;c+=vec3(.25,.42,1.)*exp(-tvD*tvD*.9)*uTV*uTVfl*.22;}`:'';
+    float tvD=length(asp(uv${FR?'+uShTv':''}-uTVP.xy))/uTVP.z;c+=vec3(.25,.42,1.)*exp(-tvD*tvD*.9)*uTV*uTVfl*.22;}`:'';
   const led=`{float ld=length(asp(uv-uLed.xy))/uLed.z;c+=vec3(1.,.14,.07)*(exp(-ld*ld*5.)*1.5+exp(-ld*ld*.5)*.14)*uLed.w;}`;
   const furin=F?`{vec2 Fp=toPx(uv);vec2 hook=${v2(F.hook)};
     float w=smoothstep(${f(F.x0)},${f(F.x0+22)},Fp.x)*(1.-smoothstep(${f(F.x1-22)},${f(F.x1)},Fp.x))*smoothstep(${f(F.y0)},${f(F.y0+32)},Fp.y)*(1.-smoothstep(${f(F.y1-20)},${f(F.y1)},Fp.y));
@@ -504,9 +511,9 @@ function fragFor(C){
       vec2 d=(uvO-r.xy)/uPond.zw;float rr=length(d)*1.2;float ring=exp(-pow((rr-r.z*.35)*28.,2.))*(1.-r.z/3.);o+=vec3(.5,.6,1.)*ring*.35;}}}`:'';
   return `
 precision highp float;
-uniform sampler2D tImg,tImgOff,tOut,tOutOff,tMaps,tMask,tBloom,tBloomOff,tTV,tCatOn,tCatOff,tCupOn,tCupOff,tShadow;
+uniform sampler2D tFab,tFba,tImg,tImgOff,tOut,tOutOff,tMaps,tMask,tBloom,tBloomOff,tTV,tCatOn,tCatOff,tCupOn,tCupOff,tShadow;
 uniform vec2 uVis,uCenter,uOff,uRes;uniform float uFocus,uPar,uDOut,uT,uLamp,uTV,uTVfl,uExp,uPet,uRain,uWind,uImgA,uFurin,uNight;
-uniform vec4 uCurt[3],uCatBox,uCupBox,uPond,uRip[6];uniform mat3 uH;uniform vec3 uLampP,uTVP,uMoon;uniform vec4 uLed;
+uniform vec4 uCurt[3],uCatBox,uCupBox,uPond,uRip[6];uniform mat3 uH;uniform vec3 uLampP,uTVP,uMoon;uniform vec4 uLed;uniform float uFr,uFs;uniform vec2 uShCat,uShCup,uShLamp,uShTv;
 uniform float uDCat,uDCup,uTail,uHead,uNod,uBreath,uPurr,uEar;
 varying vec2 vP;
 float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
@@ -547,15 +554,19 @@ float catA(vec2 Pc){vec2 P=catWarp(Pc);vec2 st=(P-uCatBox.xy)/uCatBox.zw;if(st.x
 void main(){
   vec2 uv0=uCenter+vP*uVis,uv=uv0;
   // room layer: depth parallax (openings carry the depth of their frames)
-  for(int i=0;i<4;i++){float d=texture2D(tMaps,uv).r;uv=uv0+uOff*(d-uFocus)*uPar;}
+  ${FR?'':'for(int i=0;i<4;i++){float d=texture2D(tMaps,uv).r;uv=uv0+uOff*(d-uFocus)*uPar;}'}
   for(int i=0;i<3;i++){vec4 r=uCurt[i];if(r.x<0.)continue;
     float w=inRect(uv,r);float h=clamp((r.w-uv.y)/(r.w-r.y),0.,1.);
     uv.x+=w*h*h*(sin(uT*.8+uv.y*7.+float(i)*2.)*.0035+sin(uT*1.9+uv.y*13.)*.0012)*(.35+uWind);}
   ${furin}
   vec3 c=mix(lin(texture2D(tImgOff,uv).rgb),lin(texture2D(tImg,uv).rgb),uLamp);
+  ${FR?`{vec2 fs=vec2(uFs/1920.,-uFs/1084.);vec2 fab=(texture2D(tFab,uv).rg-.5)*fs,fba=(texture2D(tFba,uv).rg-.5)*fs;
+    vec2 ua=uv-uFr*fab,ub=uv-(1.-uFr)*fba;
+    vec3 ca=mix(lin(texture2D(tImgOff,ua).rgb),lin(texture2D(tImg,ua).rgb),uLamp),cb=mix(lin(texture2D(tOutOff,ub).rgb),lin(texture2D(tOut,ub).rgb),uLamp);
+    c=mix(ca,cb,uFr);}`:''}
   // the view outside: its own far layer, seen through the exact opening mask of the room
   vec2 uvO=uv0+uOff*(uDOut-uFocus)*uPar;
-  float op=texture2D(tMask,uv).r;
+  float op=${FR?'0.':'texture2D(tMask,uv).r'};
   if(op>.002){
     vec3 o=mix(lin(texture2D(tOutOff,uvO).rgb),lin(texture2D(tOut,uvO).rgb),uLamp);
     ${pond}
@@ -567,9 +578,9 @@ void main(){
       o+=vec3(.42,.5,.66)*rr*(.45+.55*uRain)*.32*(.7+.3*uLamp);}
     c=mix(c,o,op);
   }
-  vec3 m=texture2D(tMaps,uv).rgb;float warm=m.g*m.g,cool=m.b*m.b;
-  vec3 bl=mix(lin(texture2D(tBloomOff,uv).rgb),lin(texture2D(tBloom,uv).rgb),uLamp);
-  float lampD=length(asp(uv-uLampP.xy))/uLampP.z;
+  vec2 uvB=uv${FR?'+uShLamp*.8':''};vec3 m=texture2D(tMaps,uvB).rgb;float warm=m.g*m.g,cool=m.b*m.b;
+  vec3 bl=mix(lin(texture2D(tBloomOff,uvB).rgb),lin(texture2D(tBloom,uvB).rgb),uLamp);
+  float lampD=length(asp(uv${FR?'+uShLamp':''}-uLampP.xy))/uLampP.z;
   c*=1.+warm*uLamp*(sin(uT*7.3)*.006+sin(uT*.6)*.025);
   c+=bl*(.5+.1*sin(uT*.45));
   c+=vec3(1.,.55,.22)*exp(-lampD*lampD*2.2)*.16*uLamp;
@@ -578,12 +589,12 @@ void main(){
   ${tv}
   ${led}
   // cup layer
-  vec2 Pu=toPx(uv0+uOff*(uDCup-uFocus)*uPar);
+  vec2 Pu=toPx(uv0+${FR?'uShCup':'uOff*(uDCup-uFocus)*uPar'});
   {float sh=texture2D(tShadow,toUv(Pu)).g;c*=1.-sh*(.8+.2*uLamp);}
   vec4 cu=sprite(tCupOn,tCupOff,uCupBox,Pu);c=mix(c,cu.rgb,cu.a);
   ${steam}
   // cat layer: tail sweeps, head tilts, ear flicks, body breathes
-  vec2 Pc=toPx(uv0+uOff*(uDCat-uFocus)*uPar);
+  vec2 Pc=toPx(uv0+${FR?'uShCat':'uOff*(uDCat-uFocus)*uPar'});
   {vec3 s3=texture2D(tShadow,toUv(Pc)).rgb;c*=1.-mix(s3.b,s3.r,uLamp);}   // shadow as painted: lamp on / moonlight only
   // the tail's own shadow is drawn live, so it follows the tail instead of staying behind
   {vec2 Pl=${v2(AN)}+(Pc-${v2(AN)})/${f(SCL)};float tw=tailW(Pl);
@@ -1258,6 +1269,7 @@ async function go(i,first,via){
 }
 function apply(i,T){
   cur=i;C=SC[i];const R=C.R;
+  if(framesFor(C.key))C.frames=true;
   U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
   U.tBloom.value=T.bloom_on;U.tBloomOff.value=T.bloom_off;U.tCatOn.value=T.cat_on;U.tCatOff.value=T.cat_off;U.tCupOn.value=T.cup_on;U.tCupOff.value=T.cup_off;U.tShadow.value=T.shadow;
   U.uCatBox.value.set(...C.L.cat);U.uCupBox.value.set(...C.L.cup);U.uDCat.value=C.L.dCat;U.uDCup.value=C.L.dCup;U.uDOut.value=C.dOut;U.uFocus.value=R.focus;
@@ -1338,6 +1350,9 @@ function frame(){
   if(idle.k>.002){idle.t+=dt;ex=lerp(ex,Math.sin(idle.t*.16)*.85,idle.k);ey=lerp(ey,Math.sin(idle.t*.09+1)*.22,idle.k)}else idle.t=0;
   mouse.sx=lerp(mouse.sx,ex*par,1-Math.exp(-dt*1.6));mouse.sy=lerp(mouse.sy,ey*par,1-Math.exp(-dt*1.6));
   U.uOff.value.set(mouse.sx+Math.sin(t*.11)*.15*par,mouse.sy*.6+Math.sin(t*.17)*.08*par);
+  if(C.frames){const F=FRM[C.key];if(F&&F.ready){const N=(F.n-1)/2,p=clamp(U.uOff.value.x,-1,1)*N+N,ia=Math.min(Math.floor(p),F.n-2),ib=ia+1,f=clamp(p-ia,0,1);U.tFab.value=F.fab[ia];U.tFba.value=F.fba[ia];U.uFs.value=F.fs;
+    U.tImg.value=F.on[ia];U.tImgOff.value=F.off[ia];U.tOut.value=F.on[ib];U.tOutOff.value=F.off[ib];U.uFr.value=f;
+    for(const [k,u] of [['cat',U.uShCat],['cup',U.uShCup],['lamp',U.uShLamp],['tv',U.uShTv]]){const a=F.sh[k][ia],b=F.sh[k][ib];u.value.set(lerp(a[0],b[0],f),lerp(a[1],b[1],f))}}}
   U.uT.value=t;U.uLamp.value=S.lampLv;U.uTV.value=S.tvLv;U.uTVfl.value=.75+Math.random()*.25;U.uPet.value=S.pet;U.uRain.value=S.rainLv;
   U.uNight.value=night;U.uExp.value=1-night*.45;
   if(C.R.tv&&S.tvLv>.02){tvAcc+=dt;if(tvAcc>.08){tvAcc=0;drawTV(t)}}
