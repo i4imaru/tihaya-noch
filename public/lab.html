@@ -17,7 +17,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tihaya.app/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="https://tihaya.app/">
+<meta name="robots" content="noindex,nofollow">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Тихая ночь","alternateName":"Quiet Night","url":"https://tihaya.app/","description":"Десять ночных комнат в разных уголках мира: лампа, дождь, белый кот и таймер сна. Бесплатно, без регистрации.","applicationCategory":"LifestyleApplication","operatingSystem":"Any","inLanguage":["ru","en","es","fr","de","pt","uk","ja","ko","zh"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 3.2A9 9 0 1 0 20.8 15 7.2 7.2 0 0 1 15.5 3.2z' fill='%23ffb766'/%3E%3C/svg%3E">
 <title>Тихая ночь</title>
@@ -347,6 +347,7 @@ button,select{font-family:var(--body)}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.TN_LAB={room:"lab/room"};</script>
 <script>// Own hosting: the same document API the page uses on claude.ai, served by /api (Cloudflare Pages Functions + D1).
 (()=>{const A='/api',AB='abcdefghijklmnopqrstuvwxyz0123456789';let vid=null;try{vid=localStorage.getItem('tn_vid')}catch(e){}
 if(!vid||!/^v_[a-z0-9]{20}$/.test(vid)){vid='v_'+Array.from(crypto.getRandomValues(new Uint8Array(20)),b=>AB[b%36]).join('');try{localStorage.setItem('tn_vid',vid)}catch(e){}}
