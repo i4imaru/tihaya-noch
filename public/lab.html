@@ -450,7 +450,7 @@ function framesFor(key){if(!LABFR||!LABFR[key])return null;if(FRM[key])return FR
     return Promise.all([...[...Array(j.n).keys()].flatMap(i=>[loadTex(dir+'/on_'+id(i)+'.jpg'),loadTex(dir+'/off_'+id(i)+'.jpg')]),
       ...[...Array(j.n-1).keys()].flatMap(i=>[loadTex(dir+'/fab_'+id(i)+'.png'),loadTex(dir+'/fba_'+id(i)+'.png')])])}).then(a=>{const m=2*F.n,A=a.slice(0,m),B=a.slice(m);
       F.on=A.filter((_,i)=>i%2==0);F.off=A.filter((_,i)=>i%2==1);F.fab=B.filter((_,i)=>i%2==0);F.fba=B.filter((_,i)=>i%2==1);F.ready=true}).catch(()=>{});return F}
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask)/.test(n)?'?v=4':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask)/.test(n)?'?v=5':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -566,8 +566,6 @@ void main(){
     c=mix(ca,cb,uFr);}`:''}
   // the view outside: its own far layer, seen through the exact opening mask of the room
   vec2 uvO=uv0+uOff*(uDOut-uFocus)*uPar;
-  // keep the outside layer from sliding past the glass edge (mask.g = distance to the frame, 64px = 1)
-  ${FR?'':'{vec2 dO=(uvO-uv)*vec2(1920.,1084.);float dm=texture2D(tMask,uv).g*64.;uvO=uv+(uvO-uv)*min(1.,.9*dm/max(length(dO),.001));}'}
   float op=${FR?'0.':'texture2D(tMask,uv).r'};
   if(op>.002){
     vec3 o=mix(lin(texture2D(tOutOff,uvO).rgb),lin(texture2D(tOut,uvO).rgb),uLamp);
