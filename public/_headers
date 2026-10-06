@@ -11,3 +11,9 @@
 
 /audio/*
   Cache-Control: public, max-age=2592000
+
+/*/*.mp4
+  Cache-Control: public, max-age=604800
+
+/*/*.webm
+  Cache-Control: public, max-age=604800
