@@ -450,7 +450,7 @@ function framesFor(key){if(!LABFR||!LABFR[key])return null;if(FRM[key])return FR
     return Promise.all([...[...Array(j.n).keys()].flatMap(i=>[loadTex(dir+'/on_'+id(i)+'.jpg'),loadTex(dir+'/off_'+id(i)+'.jpg')]),
       ...[...Array(j.n-1).keys()].flatMap(i=>[loadTex(dir+'/fab_'+id(i)+'.png'),loadTex(dir+'/fba_'+id(i)+'.png')])])}).then(a=>{const m=2*F.n,A=a.slice(0,m),B=a.slice(m);
       F.on=A.filter((_,i)=>i%2==0);F.off=A.filter((_,i)=>i%2==1);F.fab=B.filter((_,i)=>i%2==0);F.fba=B.filter((_,i)=>i%2==1);F.ready=true}).catch(()=>{});return F}
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=38':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=39':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -575,7 +575,7 @@ void main(){
       float rA=smoothstep(0.,.35,uRain),rB=smoothstep(.3,.75,uRain),rC=smoothstep(.62,1.,uRain);
       float rr=rainL(uvO,70.,9.,5.,1.)*.55*rA+rainL(uvO,38.,13.,6.,2.)*.9*rB+rainL(uvO,130.,6.5,4.,3.)*.35*rC+rainL(uvO,95.,15.,7.,4.)*.7*rC;
       o=mix(o,o*vec3(.78,.84,.95)+vec3(.012,.016,.026),uRain*.55);
-      o+=vec3(.42,.5,.66)*rr*(.45+.55*uRain)*.32*(.7+.3*uLamp);}
+      rr*=1.-texture2D(tMask,uvO).b;o+=vec3(.42,.5,.66)*rr*(.45+.55*uRain)*.32*(.7+.3*uLamp);}
     c=mix(c,o,op);
   }
   vec2 uvB=uv${FR?'+uShLamp*.8':''};vec3 m=texture2D(tMaps,uvB).rgb;float warm=m.g*m.g,cool=m.b*m.b;
