@@ -455,7 +455,7 @@ function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){v
   const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
   const b=V.box;U.uVidBox.value.set(b[0]/1920,1-b[3]/1084,b[2]/1920,1-b[1]/1084);U.tVid.value=t;vidEl=v;vidTex=t;window.__tnVid=v;
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=40':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=41':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -474,7 +474,7 @@ const U={tImg:{value:null},tImgOff:{value:null},tOut:{value:null},tOutOff:{value
   uCatBox:{value:new THREE.Vector4()},uCupBox:{value:new THREE.Vector4()},uDCat:{value:.6},uDCup:{value:.7},uDOut:{value:.06},
   uTail:{value:0},uHead:{value:0},uNod:{value:0},uBreath:{value:0},uPurr:{value:0},uEar:{value:0},uFurin:{value:0},
   uVis:{value:new THREE.Vector2(1,1)},uCenter:{value:new THREE.Vector2(.5,.5)},uOff:{value:new THREE.Vector2()},uFocus:{value:.55},uPar:{value:.028},
-  uT:{value:0},uLamp:{value:1},uTV:{value:0},tVid:{value:null},uVidBox:{value:new THREE.Vector4(0,0,1,1)},uVidOn:{value:0},uTVfl:{value:1},uExp:{value:1},uPet:{value:0},uRain:{value:0},uWind:{value:.3},uNight:{value:0},
+  uT:{value:0},uLamp:{value:1},uTV:{value:0},tVid:{value:null},uVidBox:{value:new THREE.Vector4(0,0,1,1)},uVidOn:{value:0},uFol:{value:0},uTVfl:{value:1},uExp:{value:1},uPet:{value:0},uRain:{value:0},uWind:{value:.3},uNight:{value:0},
   uCurt:{value:[V4(),V4(),V4()]},uH:{value:new THREE.Matrix3()},uPond:{value:new THREE.Vector4(-9,-9,.01,.01)},uRip:{value:rip},
   uLampP:{value:new THREE.Vector3()},uTVP:{value:new THREE.Vector3(-9,-9,1)},uLed:{value:new THREE.Vector4(-9,-9,.01,0)},uFr:{value:0},uFs:{value:96},tFab:{value:null},tFba:{value:null},uShCat:{value:new THREE.Vector2()},uShCup:{value:new THREE.Vector2()},uShLamp:{value:new THREE.Vector2()},uShTv:{value:new THREE.Vector2()},uMoon:{value:new THREE.Vector3()},
   uImgA:{value:IMG.w/IMG.h},uRes:{value:new THREE.Vector2(1,1)}};
@@ -516,7 +516,7 @@ function fragFor(C){
       vec2 d=(uvO-r.xy)/uPond.zw;float rr=length(d)*1.2;float ring=exp(-pow((rr-r.z*.35)*28.,2.))*(1.-r.z/3.);o+=vec3(.5,.6,1.)*ring*.35;}}}`:'';
   return `
 precision highp float;
-uniform sampler2D tVid;uniform vec4 uVidBox;uniform float uVidOn;
+uniform sampler2D tVid;uniform vec4 uVidBox;uniform float uVidOn,uFol;
 uniform sampler2D tFab,tFba,tImg,tImgOff,tOut,tOutOff,tMaps,tMask,tBloom,tBloomOff,tTV,tCatOn,tCatOff,tCupOn,tCupOff,tShadow;
 uniform vec2 uVis,uCenter,uOff,uRes;uniform float uFocus,uPar,uDOut,uT,uLamp,uTV,uTVfl,uExp,uPet,uRain,uWind,uImgA,uFurin,uNight;
 uniform vec4 uCurt[3],uCatBox,uCupBox,uPond,uRip[6];uniform mat3 uH;uniform vec3 uLampP,uTVP,uMoon;uniform vec4 uLed;uniform float uFr,uFs;uniform vec2 uShCat,uShCup,uShLamp,uShTv;
@@ -574,10 +574,16 @@ void main(){
   vec2 uvO=uv0+uOff*(uDOut-uFocus)*uPar;
   float op=${FR?'0.':'texture2D(tMask,uv).r'};
   if(op>.002){
-    vec3 o=mix(lin(texture2D(tOutOff,uvO).rgb),lin(texture2D(tOut,uvO).rgb),uLamp);
-    if(uVidOn>.5){vec2 q=(uvO-uVidBox.xy)/(uVidBox.zw-uVidBox.xy);
+    vec2 uvW=uvO;
+    if(uFol>0.){float fw=texture2D(tMask,uvO).g;
+      if(fw>.004){float gs=.62+.28*sin(uT*.37)+.18*sin(uT*.83+1.3);
+        vec2 dd=vec2(sin(uT*1.2+uvO.y*23.+uvO.x*9.)*.7+sin(uT*2.4+uvO.x*41.+uvO.y*19.)*.3,
+                     sin(uT*1.7+uvO.x*27.+uvO.y*7.)*.5+sin(uT*3.1+uvO.y*45.)*.2);
+        uvW=uvO+dd*fw*gs*vec2(.0045,.0035)*uFol;}}
+    vec3 o=mix(lin(texture2D(tOutOff,uvW).rgb),lin(texture2D(tOut,uvW).rgb),uLamp);
+    if(uVidOn>.5){vec2 q=(uvW-uVidBox.xy)/(uVidBox.zw-uVidBox.xy);
       if(q.x>0.&&q.y>0.&&q.x<1.&&q.y<1.){float e=smoothstep(0.,.03,q.x)*smoothstep(0.,.03,q.y)*smoothstep(0.,.03,1.-q.x)*smoothstep(0.,.03,1.-q.y);
-        vec3 vv=lin(texture2D(tVid,q).rgb),son=lin(texture2D(tOut,uvO).rgb),soff=lin(texture2D(tOutOff,uvO).rgb);
+        vec3 vv=lin(texture2D(tVid,q).rgb),son=lin(texture2D(tOut,uvW).rgb),soff=lin(texture2D(tOutOff,uvW).rgb);
         vec3 voff=vv*clamp(soff/max(son,vec3(.002)),0.,4.);o=mix(o,mix(voff,vv,uLamp),e*uVidOn);}}
     ${pond}
     ${SPK}
@@ -1280,7 +1286,7 @@ async function go(i,first,via){
 function apply(i,T){
   cur=i;C=SC[i];const R=C.R;
   if(framesFor(C.key))C.frames=true;
-  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
+  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.uFol.value=({ca:1})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
   U.tBloom.value=T.bloom_on;U.tBloomOff.value=T.bloom_off;U.tCatOn.value=T.cat_on;U.tCatOff.value=T.cat_off;U.tCupOn.value=T.cup_on;U.tCupOff.value=T.cup_off;U.tShadow.value=T.shadow;
   U.uCatBox.value.set(...C.L.cat);U.uCupBox.value.set(...C.L.cup);U.uDCat.value=C.L.dCat;U.uDCup.value=C.L.dCup;U.uDOut.value=C.dOut;U.uFocus.value=R.focus;
   U.uLampP.value.set(R.lamp.x,1-R.lamp.y,R.lamp.r);U.uMoon.value.set(R.moon.x,1-R.moon.y,R.moon.r);
