@@ -1287,7 +1287,7 @@ async function go(i,first,via){
 function apply(i,T){
   cur=i;C=SC[i];const R=C.R;
   if(framesFor(C.key))C.frames=true;
-  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.uFol.value=({ca:1})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
+  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.uFol.value=({})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
   U.tBloom.value=T.bloom_on;U.tBloomOff.value=T.bloom_off;U.tCatOn.value=T.cat_on;U.tCatOff.value=T.cat_off;U.tCupOn.value=T.cup_on;U.tCupOff.value=T.cup_off;U.tShadow.value=T.shadow;
   U.uCatBox.value.set(...C.L.cat);U.uCupBox.value.set(...C.L.cup);U.uDCat.value=C.L.dCat;U.uDCup.value=C.L.dCup;U.uDOut.value=C.dOut;U.uFocus.value=R.focus;
   U.uLampP.value.set(R.lamp.x,1-R.lamp.y,R.lamp.r);U.uMoon.value.set(R.moon.x,1-R.moon.y,R.moon.r);
