@@ -449,13 +449,13 @@ function framesFor(key){if(!LABFR||!LABFR[key])return null;if(FRM[key])return FR
     return Promise.all([...[...Array(j.n).keys()].flatMap(i=>[loadTex(dir+'/on_'+id(i)+'.jpg'),loadTex(dir+'/off_'+id(i)+'.jpg')]),
       ...[...Array(j.n-1).keys()].flatMap(i=>[loadTex(dir+'/fab_'+id(i)+'.png'),loadTex(dir+'/fba_'+id(i)+'.png')])])}).then(a=>{const m=2*F.n,A=a.slice(0,m),B=a.slice(m);
       F.on=A.filter((_,i)=>i%2==0);F.off=A.filter((_,i)=>i%2==1);F.fab=B.filter((_,i)=>i%2==0);F.fba=B.filter((_,i)=>i%2==1);F.ready=true}).catch(()=>{});return F}
-const VIDS={ca:{src:'ca/loop.mp4',box:[560,170,1920,935]},dacha:{src:'dacha/loop.mp4',box:[0,0,1920,1080]}};let vidEl=null,vidTex=null,vidKey=null;
+const VIDS={ca:{src:'ca/loop.mp4',box:[560,170,1920,935]},dacha:{src:'dacha/loop.mp4',box:[0,0,1920,1080]},india:{src:'india/loop.mp4',box:[240,50,1840,950]}};let vidEl=null,vidTex=null,vidKey=null;
 function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){vidEl.pause();vidEl.removeAttribute('src');vidEl.load();vidEl=null}if(vidTex){vidTex.dispose();vidTex=null}vidKey=key;U.uVidOn.value=0;U.tVid.value=tTV;if(!V||LAB)return;
-  const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=8';
+  const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=9';
   const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
   const b=V.box;U.uVidBox.value.set(b[0]/1920,1-b[3]/1084,b[2]/1920,1-b[1]/1084);U.tVid.value=t;vidEl=v;vidTex=t;window.__tnVid=v;
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=45':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=46':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -1281,7 +1281,7 @@ async function go(i,first,via){
 function apply(i,T){
   cur=i;C=SC[i];const R=C.R;
   if(framesFor(C.key))C.frames=true;
-  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.uFol.value=({ca:1,dacha:1})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
+  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.uFol.value=({ca:1,dacha:1,india:1})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
   U.tBloom.value=T.bloom_on;U.tBloomOff.value=T.bloom_off;U.tCatOn.value=T.cat_on;U.tCatOff.value=T.cat_off;U.tCupOn.value=T.cup_on;U.tCupOff.value=T.cup_off;U.tShadow.value=T.shadow;
   U.uCatBox.value.set(...C.L.cat);U.uCupBox.value.set(...C.L.cup);U.uDCat.value=C.L.dCat;U.uDCup.value=C.L.dCup;U.uDOut.value=C.dOut;U.uFocus.value=R.focus;
   U.uLampP.value.set(R.lamp.x,1-R.lamp.y,R.lamp.r);U.uMoon.value.set(R.moon.x,1-R.moon.y,R.moon.r);
