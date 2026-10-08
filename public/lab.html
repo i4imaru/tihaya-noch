@@ -451,12 +451,18 @@ function framesFor(key){if(!LABFR||!LABFR[key])return null;if(FRM[key])return FR
       ...[...Array(j.n-1).keys()].flatMap(i=>[loadTex(dir+'/fab_'+id(i)+'.png'),loadTex(dir+'/fba_'+id(i)+'.png')])])}).then(a=>{const m=2*F.n,A=a.slice(0,m),B=a.slice(m);
       F.on=A.filter((_,i)=>i%2==0);F.off=A.filter((_,i)=>i%2==1);F.fab=B.filter((_,i)=>i%2==0);F.fba=B.filter((_,i)=>i%2==1);F.ready=true}).catch(()=>{});return F}
 const VIDS={ca:{src:'ca/loop.mp4',box:[560,170,1920,935]},dacha:{src:'dacha/loop.mp4',box:[0,0,1920,1080]},india:{src:'india/loop.mp4',box:[240,50,1840,950]},jp:{src:'jp/loop.mp4',box:[600,60,1880,780]},sea:{src:'sea/loop.mp4',box:[576,96,1920,852]},china:{src:'china/loop.mp4',box:[300,120,1740,930]},latam:{src:'latam/loop.mp4',box:[231,20,1920,970]},room:{src:'room/loop.mp4',box:[480,262,1214,675]}};let vidEl=null,vidTex=null,vidKey=null;
+const CATV={ca:{src:'ca/cat.mp4',box:[938,680,662,372],off:[.428,.833,1.115]}};let cvEl=null,cvTex=null,cvKey=null;
+function setCatVid(key){const V=CATV[key];if(cvKey===key&&cvEl)return;if(cvEl){cvEl.pause();cvEl.removeAttribute('src');cvEl.load();cvEl=null}if(cvTex){cvTex.dispose();cvTex=null}cvKey=key;U.uCatVid.value=0;U.tCatVid.value=tTV;if(!V||LAB)return;
+  const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=1';
+  const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
+  U.uCatVBox.value.set(...V.box);U.uCatOffR.value.set(...V.off);U.tCatVid.value=t;cvEl=v;cvTex=t;window.__tnCat=v;
+  v.addEventListener('playing',()=>{if(cvEl===v)U.uCatVid.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
 function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){vidEl.pause();vidEl.removeAttribute('src');vidEl.load();vidEl=null}if(vidTex){vidTex.dispose();vidTex=null}vidKey=key;U.uVidOn.value=0;U.tVid.value=tTV;if(!V||LAB)return;
   const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=22';
   const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
   const b=V.box;U.uVidBox.value.set(b[0]/1920,1-b[3]/1084,b[2]/1920,1-b[1]/1084);U.tVid.value=t;vidEl=v;vidTex=t;window.__tnVid=v;
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=61':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=62':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -475,7 +481,7 @@ const U={tImg:{value:null},tImgOff:{value:null},tOut:{value:null},tOutOff:{value
   uCatBox:{value:new THREE.Vector4()},uCupBox:{value:new THREE.Vector4()},uDCat:{value:.6},uDCup:{value:.7},uDOut:{value:.06},
   uTail:{value:0},uHead:{value:0},uNod:{value:0},uBreath:{value:0},uPurr:{value:0},uEar:{value:0},uFurin:{value:0},
   uVis:{value:new THREE.Vector2(1,1)},uCenter:{value:new THREE.Vector2(.5,.5)},uOff:{value:new THREE.Vector2()},uFocus:{value:.55},uPar:{value:.028},
-  uT:{value:0},uLamp:{value:1},uTV:{value:0},tVid:{value:null},uVidBox:{value:new THREE.Vector4(0,0,1,1)},uVidOn:{value:0},uFol:{value:0},uTVfl:{value:1},uExp:{value:1},uPet:{value:0},uRain:{value:0},uWind:{value:.3},uNight:{value:0},
+  uT:{value:0},uLamp:{value:1},uTV:{value:0},tVid:{value:null},tCatVid:{value:null},uCatVid:{value:0},uCatVBox:{value:new THREE.Vector4()},uCatOffR:{value:new THREE.Vector3(1,1,1)},uVidBox:{value:new THREE.Vector4(0,0,1,1)},uVidOn:{value:0},uFol:{value:0},uTVfl:{value:1},uExp:{value:1},uPet:{value:0},uRain:{value:0},uWind:{value:.3},uNight:{value:0},
   uCurt:{value:[V4(),V4(),V4()]},uH:{value:new THREE.Matrix3()},uPond:{value:new THREE.Vector4(-9,-9,.01,.01)},uRip:{value:rip},
   uLampP:{value:new THREE.Vector3()},uTVP:{value:new THREE.Vector3(-9,-9,1)},uLed:{value:new THREE.Vector4(-9,-9,.01,0)},uFr:{value:0},uFs:{value:96},tFab:{value:null},tFba:{value:null},uShCat:{value:new THREE.Vector2()},uShCup:{value:new THREE.Vector2()},uShLamp:{value:new THREE.Vector2()},uShTv:{value:new THREE.Vector2()},uMoon:{value:new THREE.Vector3()},
   uImgA:{value:IMG.w/IMG.h},uRes:{value:new THREE.Vector2(1,1)}};
@@ -517,7 +523,7 @@ function fragFor(C){
       vec2 d=(uvO-r.xy)/uPond.zw;float rr=length(d)*1.2;float ring=exp(-pow((rr-r.z*.35)*28.,2.))*(1.-r.z/3.);o+=vec3(.5,.6,1.)*ring*.35;}}}`:'';
   return `
 precision highp float;
-uniform sampler2D tVid;uniform vec4 uVidBox;uniform float uVidOn,uFol;
+uniform sampler2D tVid,tCatVid;uniform vec4 uVidBox,uCatVBox;uniform float uVidOn,uFol,uCatVid;uniform vec3 uCatOffR;
 uniform sampler2D tFab,tFba,tImg,tImgOff,tOut,tOutOff,tMaps,tMask,tBloom,tBloomOff,tTV,tCatOn,tCatOff,tCupOn,tCupOff,tShadow;
 uniform vec2 uVis,uCenter,uOff,uRes;uniform float uFocus,uPar,uDOut,uT,uLamp,uTV,uTVfl,uExp,uPet,uRain,uWind,uImgA,uFurin,uNight;
 uniform vec4 uCurt[3],uCatBox,uCupBox,uPond,uRip[6];uniform mat3 uH;uniform vec3 uLampP,uTVP,uMoon;uniform vec4 uLed;uniform float uFr,uFs;uniform vec2 uShCat,uShCup,uShLamp,uShTv;
@@ -548,6 +554,7 @@ float tailW(vec2 P){vec2 d=P-${v2(T.root)};float along=dot(d,${v2(T.dir)});
   return smoothstep(-6.,14.,along)*smoothstep(${f(T.ymin-10)},${f(T.ymin+12)},P.y)*(1.-smoothstep(${f(T.ymax-10)},${f(T.ymax)},P.y));}
 vec2 catWarp(vec2 Pc){
   vec2 P=${v2(AN)}+(Pc-${v2(AN)})/${f(SCL)};
+  if(uCatVid>.5)return P;
   {vec2 root=${v2(T.root)};vec2 d=P-root;float along=dot(d,${v2(T.dir)});
    float k=clamp(along/${f(T.len)},0.,1.);float a=uTail*(k*.7+k*k*.7)*${f(T.sign||1)}*tailW(P);P=root+rot(d,-a);}
   {vec2 hc=${v2(H.c)},pv=${v2(H.pivot)};float w=1.-smoothstep(${f(H.r0)},${f(H.r1)},length(P-hc));
@@ -609,11 +616,15 @@ void main(){
   vec2 Pc=toPx(uv0+${FR?'uShCat':'uOff*(uDCat-uFocus)*uPar'});
   {vec3 s3=texture2D(tShadow,toUv(Pc)).rgb;c*=1.-mix(s3.b,s3.r,uLamp);}   // shadow as painted: lamp on / moonlight only
   // the tail's own shadow is drawn live, so it follows the tail instead of staying behind
-  {vec2 Pl=${v2(AN)}+(Pc-${v2(AN)})/${f(SCL)};float tw=tailW(Pl);
+  {vec2 Pl=${v2(AN)}+(Pc-${v2(AN)})/${f(SCL)};float tw=tailW(Pl)*(1.-uCatVid);
    if(tw>.001){float s=catA(Pc+vec2(0.,-3.))*.3+catA(Pc+vec2(-4.,-4.))*.18+catA(Pc+vec2(4.,-4.))*.18+catA(Pc+vec2(-8.,-7.))*.12+catA(Pc+vec2(8.,-7.))*.12+catA(Pc+vec2(0.,-9.))*.1;
      c*=1.-clamp(s,0.,1.)*.6*tw*(.75+.25*uLamp);}}
   vec2 P=catWarp(Pc);
-  vec4 ca=sprite(tCatOn,tCatOff,uCatBox,P);c=mix(c,ca.rgb,ca.a);
+  vec4 ca=sprite(tCatOn,tCatOff,uCatBox,P);
+  if(uCatVid>.5){vec2 st=(P-uCatVBox.xy)/uCatVBox.zw;ca=vec4(0.);
+    if(st.x>0.&&st.y>0.&&st.x<1.&&st.y<1.){float ty=1.-st.y;vec3 vc=lin(texture2D(tCatVid,vec2(st.x*.5,ty)).rgb);
+      float va=texture2D(tCatVid,vec2(.5+st.x*.5,ty)).r;ca=vec4(mix(vc*uCatOffR,vc,uLamp),va);}}
+  c=mix(c,ca.rgb,ca.a);
   // grade
   c*=uExp;c=aces(c*1.08);c=pow(c,vec3(1./2.2));
   float l=dot(c,vec3(.299,.587,.114));
@@ -1282,7 +1293,7 @@ async function go(i,first,via){
 function apply(i,T){
   cur=i;C=SC[i];const R=C.R;
   if(framesFor(C.key))C.frames=true;
-  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);U.uFol.value=({ca:1,dacha:1,india:1,jp:1,sea:1,china:1,latam:1,room:1})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
+  U.tImg.value=T.plate_on;U.tImgOff.value=T.plate_off;U.tOut.value=T.out_on;setVid(C.key);setCatVid(C.key);U.uFol.value=({ca:1,dacha:1,india:1,jp:1,sea:1,china:1,latam:1,room:1})[C.key]||0;U.tOutOff.value=T.out_off;U.tMaps.value=T.maps;U.tMask.value=T.mask;
   U.tBloom.value=T.bloom_on;U.tBloomOff.value=T.bloom_off;U.tCatOn.value=T.cat_on;U.tCatOff.value=T.cat_off;U.tCupOn.value=T.cup_on;U.tCupOff.value=T.cup_off;U.tShadow.value=T.shadow;
   U.uCatBox.value.set(...C.L.cat);U.uCupBox.value.set(...C.L.cup);U.uDCat.value=C.L.dCat;U.uDCup.value=C.L.dCup;U.uDOut.value=C.dOut;U.uFocus.value=R.focus;
   U.uLampP.value.set(R.lamp.x,1-R.lamp.y,R.lamp.r);U.uMoon.value.set(R.moon.x,1-R.moon.y,R.moon.r);
