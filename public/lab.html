@@ -451,18 +451,20 @@ function framesFor(key){if(!LABFR||!LABFR[key])return null;if(FRM[key])return FR
       ...[...Array(j.n-1).keys()].flatMap(i=>[loadTex(dir+'/fab_'+id(i)+'.png'),loadTex(dir+'/fba_'+id(i)+'.png')])])}).then(a=>{const m=2*F.n,A=a.slice(0,m),B=a.slice(m);
       F.on=A.filter((_,i)=>i%2==0);F.off=A.filter((_,i)=>i%2==1);F.fab=B.filter((_,i)=>i%2==0);F.fba=B.filter((_,i)=>i%2==1);F.ready=true}).catch(()=>{});return F}
 const VIDS={ca:{src:'ca/loop.mp4',box:[560,170,1920,935]},dacha:{src:'dacha/loop.mp4',box:[0,0,1920,1080]},india:{src:'india/loop.mp4',box:[240,50,1840,950]},jp:{src:'jp/loop.mp4',box:[600,60,1880,780]},sea:{src:'sea/loop.mp4',box:[576,96,1920,852]},china:{src:'china/loop.mp4',box:[300,120,1740,930]},latam:{src:'latam/loop.mp4',box:[231,20,1920,970]},room:{src:'room/loop.mp4',box:[480,262,1214,675]}};let vidEl=null,vidTex=null,vidKey=null;
-const CATV={ca:{src:'ca/cat.mp4',box:[938,680,662,372],off:[.428,.833,1.115]}};let cvEl=null,cvTex=null,cvKey=null;
-function setCatVid(key){const V=CATV[key];if(cvKey===key&&cvEl)return;if(cvEl){cvEl.pause();cvEl.removeAttribute('src');cvEl.load();cvEl=null}if(cvTex){cvTex.dispose();cvTex=null}cvKey=key;U.uCatVid.value=0;U.tCatVid.value=tTV;if(!V||LAB)return;
+const CATV={ca:{src:'ca/cat.mp4',box:[938,680,662,372],off:[.428,.833,1.115]}};let cvEl=null,cvTex=null,cvKey=null,catVidT=0;
+function setCatVid(key){const V=CATV[key];if(cvKey===key&&cvEl)return;if(cvEl){cvEl.pause();cvEl.removeAttribute('src');cvEl.load();cvEl=null}if(cvTex){cvTex.dispose();cvTex=null}cvKey=key;U.uCatVid.value=0;catVidT=0;U.tCatVid.value=tTV;if(!V||LAB)return;
   const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=1';
   const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
   U.uCatVBox.value.set(...V.box);U.uCatOffR.value.set(...V.off);U.tCatVid.value=t;cvEl=v;cvTex=t;window.__tnCat=v;
-  v.addEventListener('playing',()=>{if(cvEl===v)U.uCatVid.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
+  v.loop=false;catVidT=0;let tmr=0;v.addEventListener('playing',()=>{if(cvEl===v)catVidT=1});
+  v.addEventListener('ended',()=>{if(cvEl!==v)return;catVidT=0;clearTimeout(tmr);tmr=setTimeout(()=>{if(cvEl===v){v.currentTime=0;v.play().catch(()=>{})}},7000+Math.random()*11000)});
+  const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
 function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){vidEl.pause();vidEl.removeAttribute('src');vidEl.load();vidEl=null}if(vidTex){vidTex.dispose();vidTex=null}vidKey=key;U.uVidOn.value=0;U.tVid.value=tTV;if(!V||LAB)return;
   const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=22';
   const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
   const b=V.box;U.uVidBox.value.set(b[0]/1920,1-b[3]/1084,b[2]/1920,1-b[1]/1084);U.tVid.value=t;vidEl=v;vidTex=t;window.__tnVid=v;
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=62':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+n+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=63':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -553,8 +555,7 @@ float rainL(vec2 uv,float sc,float sp,float len,float seed){
 float tailW(vec2 P){vec2 d=P-${v2(T.root)};float along=dot(d,${v2(T.dir)});
   return smoothstep(-6.,14.,along)*smoothstep(${f(T.ymin-10)},${f(T.ymin+12)},P.y)*(1.-smoothstep(${f(T.ymax-10)},${f(T.ymax)},P.y));}
 vec2 catWarp(vec2 Pc){
-  vec2 P=${v2(AN)}+(Pc-${v2(AN)})/${f(SCL)};
-  if(uCatVid>.5)return P;
+  vec2 P=${v2(AN)}+(Pc-${v2(AN)})/${f(SCL)};vec2 P0=P;
   {vec2 root=${v2(T.root)};vec2 d=P-root;float along=dot(d,${v2(T.dir)});
    float k=clamp(along/${f(T.len)},0.,1.);float a=uTail*(k*.7+k*k*.7)*${f(T.sign||1)}*tailW(P);P=root+rot(d,-a);}
   {vec2 hc=${v2(H.c)},pv=${v2(H.pivot)};float w=1.-smoothstep(${f(H.r0)},${f(H.r1)},length(P-hc));
@@ -562,7 +563,7 @@ vec2 catWarp(vec2 Pc){
   {vec2 eb=${v2(E.base)};float we=1.-smoothstep(${f(E.r0||8)},${f(E.r1||16)},length(P-${v2(E.tip)}));P=eb+rot(P-eb,-uEar*we);}
   {vec2 bc=${v2(B.c)};float wb=exp(-pow((P.x-bc.x)/${f(B.rx)},2.)-pow((P.y-bc.y)/${f(B.ry)},2.));float base=${f(B.base)};
    P.y=base+(P.y-base)/(1.+uBreath*wb);P.x=bc.x+(P.x-bc.x)/(1.+uBreath*.45*wb);P.x+=sin(uT*58.)*.18*uPurr*wb;}
-  return P;}
+  return mix(P,P0,uCatVid);}
 float catA(vec2 Pc){vec2 P=catWarp(Pc);vec2 st=(P-uCatBox.xy)/uCatBox.zw;if(st.x<0.||st.y<0.||st.x>1.||st.y>1.)return 0.;st.y=1.-st.y;
   return mix(texture2D(tCatOff,st).a,texture2D(tCatOn,st).a,uLamp);}
 void main(){
@@ -621,9 +622,10 @@ void main(){
      c*=1.-clamp(s,0.,1.)*.6*tw*(.75+.25*uLamp);}}
   vec2 P=catWarp(Pc);
   vec4 ca=sprite(tCatOn,tCatOff,uCatBox,P);
-  if(uCatVid>.5){vec2 st=(P-uCatVBox.xy)/uCatVBox.zw;ca=vec4(0.);
+  if(uCatVid>.001){vec2 st=(P-uCatVBox.xy)/uCatVBox.zw;vec4 cv=vec4(0.);
     if(st.x>0.&&st.y>0.&&st.x<1.&&st.y<1.){float ty=1.-st.y;vec3 vc=lin(texture2D(tCatVid,vec2(st.x*.5,ty)).rgb);
-      float va=texture2D(tCatVid,vec2(.5+st.x*.5,ty)).r;ca=vec4(mix(vc*uCatOffR,vc,uLamp),va);}}
+      float va=texture2D(tCatVid,vec2(.5+st.x*.5,ty)).r;cv=vec4(mix(vc*uCatOffR,vc,uLamp),va);}
+    ca=mix(ca,cv,uCatVid);}
   c=mix(c,ca.rgb,ca.a);
   // grade
   c*=uExp;c=aces(c*1.08);c=pow(c,vec3(1./2.2));
@@ -1362,7 +1364,7 @@ function frame(){
     if(p>=1){fallAsleep();return}
   }
   const dim=TM.on?1-sstep(.35,.85,TM.prog):1;
-  S.lampLv=lerp(S.lampLv,(S.lamp?1:0)*dim,1-Math.exp(-dt*2.5));S.tvLv=lerp(S.tvLv,S.tv?1:0,1-Math.exp(-dt*8));S.radioLv=lerp(S.radioLv,S.radio?1:0,1-Math.exp(-dt*10));U.uLed.value.w=S.radioLv*(.9+.1*Math.sin(t*3.1));
+  U.uCatVid.value=cvEl?lerp(U.uCatVid.value,catVidT,1-Math.exp(-dt*7)):0;S.lampLv=lerp(S.lampLv,(S.lamp?1:0)*dim,1-Math.exp(-dt*2.5));S.tvLv=lerp(S.tvLv,S.tv?1:0,1-Math.exp(-dt*8));S.radioLv=lerp(S.radioLv,S.radio?1:0,1-Math.exp(-dt*10));U.uLed.value.w=S.radioLv*(.9+.1*Math.sin(t*3.1));
   S.rainLv=lerp(S.rainLv,RAIN_LV[S.rain],1-Math.exp(-dt*.8));S.pet=Math.max(0,S.pet-dt*.3);
   const par=reduce?0:1-night*.7;
   if(tilt.on&&!pdown&&performance.now()-tilt.last<1500){mouse.x=tilt.x;mouse.y=tilt.y}
