@@ -459,7 +459,7 @@ function setCatVid(key){const V=CATV[key];if(cvKey===key&&cvEl)return;if(cvEl){c
   v.addEventListener('ended',()=>{if(cvEl!==v)return;catVidT=0;clearTimeout(tmr);tmr=setTimeout(()=>{if(cvEl===v){v.currentTime=0;v.play().catch(()=>{})}},7000+Math.random()*11000)});
   const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
 function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){vidEl.pause();vidEl.removeAttribute('src');vidEl.load();vidEl=null}if(vidTex){vidTex.dispose();vidTex=null}vidKey=key;U.uVidOn.value=0;U.tVid.value=tTV;if(!V||LAB)return;
-  const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=27';
+  const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';v.crossOrigin='anonymous';const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?V.src.replace('.mp4','.webm'):V.src)+'?v=28';
   const t=new THREE.VideoTexture(v);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;
   const b=V.box;U.uVidBox.value.set(b[0]/1920,1-b[3]/1084,b[2]/1920,1-b[1]/1084);U.tVid.value=t;vidEl=v;vidTex=t;window.__tnVid=v;
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
