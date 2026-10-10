@@ -468,7 +468,7 @@ const HI4K={room:1,dacha:1,ca:1,korea:1,jp:1,china:1,sea:1,india:1,usa:1,latam:1
 const f4k=(key,n)=>(HIRES&&HI4K[key]&&!LAB&&renderer.capabilities.maxTextureSize>=4096&&/^(plate_|out_)/.test(n))?n.replace('.jpg','_4k.jpg'):n;
 function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+f4k(key,n)+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=78':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
-const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
+const tvCan=document.createElement('canvas');tvCan.width=192;tvCan.height=144;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
 
 function homography(q){
@@ -688,13 +688,24 @@ function toggle(k){if(k==='radio'){S.radio=(S.radio+1)%3;track('act',{k,lv:S.rad
 document.querySelectorAll('#bar [data-k]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.k)));
 function toast(t){const el=$('#toast');el.textContent=t;el.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.opacity=0,2600)}
 
+const TVV={korea:'korea/tv.mp4',jp:'jp/tv.mp4',usa:'usa/tv.mp4'};let tvvEl=null,tvvKey=null;
+function tvVideo(){const k=C&&C.key;if(tvvKey!==k){if(tvvEl){tvvEl.pause();tvvEl.removeAttribute('src');tvvEl.load()}tvvEl=null;tvvKey=k;
+    if(TVV[k]&&!LAB){const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.preload='auto';
+      const wm=v.canPlayType('video/webm; codecs="vp9"');v.src=(wm?TVV[k].replace('.mp4','.webm'):TVV[k])+'?v=1';tvvEl=v}}
+  if(tvvEl&&tvvEl.paused)tvvEl.play().catch(()=>{});
+  return tvvEl&&tvvEl.readyState>=2?tvvEl:null}
 function drawTV(t){
-  const g=tvCtx,w=128,h=96;
+  const g=tvCtx,w=192,h=144;
+  const tv=tvVideo();
+  if(tv){g.drawImage(tv,0,0,w,h);const img=g.getImageData(0,0,w,h),d=img.data,roll=(t*11)%h;
+    for(let y=0;y<h;y++){const band=Math.abs(y-roll)<5?.8:1,sl=y%2?.86:1;
+      for(let x=0;x<w;x++){const i=(y*w+x)*4,nz=(Math.random()-.5)*14;d[i]=d[i]*sl*band+nz;d[i+1]=d[i+1]*sl*band+nz;d[i+2]=d[i+2]*sl*band+nz}}
+    g.putImageData(img,0,0);tTV.needsUpdate=true;return}
   ['#c0c0c0','#c0c000','#00c0c0','#00c000','#c000c0','#c00000','#0000c0'].forEach((c,i)=>{g.fillStyle=c;g.fillRect(i*w/7,0,w/7+1,h*.67)});
   ['#0000c0','#101010','#c000c0','#101010','#00c0c0','#101010','#c0c0c0'].forEach((c,i)=>{g.fillStyle=c;g.fillRect(i*w/7,h*.67,w/7+1,h*.08)});
   const y0=h*.75,hh=h*.25;[['#0b3d8c',0,.2],['#e8e8e8',.2,.4],['#5a14a8',.4,.6],['#303030',.6,.75],['#181818',.75,.82],['#303030',.82,.89],['#484848',.89,1]].forEach(([c,a,b])=>{g.fillStyle=c;g.fillRect(a*w,y0,(b-a)*w+1,hh)});
   g.fillStyle='rgba(0,0,0,.72)';g.fillRect(w*.3,h*.2,w*.4,h*.26);
-  const n=new Date();g.fillStyle='#f2f2f2';g.font='bold 15px monospace';g.textAlign='center';g.textBaseline='middle';
+  const n=new Date();g.fillStyle='#f2f2f2';g.font='bold 22px monospace';g.textAlign='center';g.textBaseline='middle';
   g.fillText(String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'),w/2,h*.33);
   const img=g.getImageData(0,0,w,h),d=img.data,roll=(t*14)%h;
   for(let y=0;y<h;y++){const band=Math.abs(y-roll)<4?.55:1,sl=y%2?.8:1;
@@ -1381,7 +1392,7 @@ function frame(){
     for(const [k,u] of [['cat',U.uShCat],['cup',U.uShCup],['lamp',U.uShLamp],['tv',U.uShTv]]){const a=F.sh[k][ia],b=F.sh[k][ib];u.value.set(lerp(a[0],b[0],f),lerp(a[1],b[1],f))}}}
   U.uT.value=t;U.uLamp.value=S.lampLv;U.uTV.value=S.tvLv;U.uTVfl.value=.75+Math.random()*.25;U.uPet.value=S.pet;U.uRain.value=S.rainLv;
   U.uNight.value=night;U.uExp.value=1-night*.45;
-  if(C.R.tv&&S.tvLv>.02){tvAcc+=dt;if(tvAcc>.08){tvAcc=0;drawTV(t)}}
+  if(C.R.tv&&S.tvLv>.02){tvAcc+=dt;if(tvAcc>(TVV[C.key]?.055:.08)){tvAcc=0;drawTV(t)}}
   for(const r of rip)if(r.z<99){r.z+=dt;if(r.z>3)r.z=99}
   if(C.R.pond&&Math.random()<dt*(.15+S.rainLv*6)){const a=Math.random()*Math.PI*2,k=Math.sqrt(Math.random())*.85,P=C.R.pond;addRipple(P.x+Math.cos(a)*k*P.rx,1-(P.y+Math.sin(a)*k*P.ry))}
   if(C.furin){S.nextBreeze-=dt;if(S.nextBreeze<0){S.nextBreeze=8+Math.random()*16;const k=.5+Math.random()*.7;S.furinV+=k*(Math.random()<.5?-1:1);if(AC&&vol>.2)setTimeout(()=>sfx.chime(.45*k*vol),120)}
