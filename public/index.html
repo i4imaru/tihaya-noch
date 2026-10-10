@@ -465,7 +465,7 @@ function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){v
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
 const HI4K={room:1,dacha:1,ca:1,korea:1,jp:1,china:1,sea:1,india:1,usa:1,latam:1};const HIRES=(()=>{try{return Math.max(screen.width,screen.height)*(window.devicePixelRatio||1)>=2400}catch(e){return false}})();
 const f4k=(key,n)=>(HIRES&&HI4K[key]&&!LAB&&renderer.capabilities.maxTextureSize>=4096&&/^(plate_|out_)/.test(n))?n.replace('.jpg','_4k.jpg'):n;
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+f4k(key,n)+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=77':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+f4k(key,n)+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=78':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
@@ -509,9 +509,8 @@ function fragFor(C){
      c+=vec3(.55,.6,.72)*a*.09*(.6+.4*uLamp)*(1.-uNight);}}`:'';
   const tv=hasTV?`{vec3 hp=uH*vec3(uv${FR?'+uShTv':''},1.);
     if(uTV>.001&&abs(hp.z)>1e-4){vec2 st=hp.xy/hp.z;vec2 q=st*2.-1.;
-      vec2 qd=q*(1.+.09*dot(q,q));vec2 dd=abs(q)-vec2(.84);
-      float sd=length(max(dd,0.))+min(max(dd.x,dd.y),0.)-.13;
-      float mk=1.-smoothstep(-.04,.0,sd);
+      vec2 qd=q*.9*(1.+.16*dot(q,q));
+      float mk=texture2D(tMask,uv${FR?'+uShTv':''}).b;
       if(mk>.001){vec3 pic=pow(texture2D(tTV,clamp(qd*.5+.5,0.,1.)).rgb,vec3(2.2))*2.2;
         pic*=1.-.55*smoothstep(.25,1.05,length(qd));
         pic+=vec3(.5,.55,.6)*.05*smoothstep(.3,-.5,qd.x+qd.y-.2)*smoothstep(-1.,.2,qd.y);
