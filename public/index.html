@@ -465,7 +465,7 @@ function setVid(key){const V=VIDS[key];if(vidKey===key&&vidEl)return;if(vidEl){v
   v.addEventListener('playing',()=>{if(vidEl===v)U.uVidOn.value=1},{once:true});const go=()=>v.play().catch(()=>{});go();addEventListener('pointerdown',go,{once:true})}
 const HI4K={room:1,dacha:1,ca:1,korea:1,jp:1,china:1,sea:1,india:1,usa:1,latam:1};const HIRES=(()=>{try{return Math.max(screen.width,screen.height)*(window.devicePixelRatio||1)>=2400}catch(e){return false}})();
 const f4k=(key,n)=>(HIRES&&HI4K[key]&&!LAB&&renderer.capabilities.maxTextureSize>=4096&&/^(plate_|out_)/.test(n))?n.replace('.jpg','_4k.jpg'):n;
-function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+f4k(key,n)+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=74':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
+function texFor(key){if(!cache.has(key))cache.set(key,Promise.all(FILES.map(n=>loadTex(((LAB&&LAB[key])||key)+'/'+f4k(key,n)+(/^(out_|mask|plate_|maps|cup_|shadow)/.test(n)?'?v=75':'')))).then(a=>Object.fromEntries(FILES.map((n,i)=>[n.split('.')[0],a[i]]))));return cache.get(key)}
 function evict(keep){for(const [k,p] of cache)if(!keep.includes(k)){cache.delete(k);p.then(T=>Object.values(T).forEach(t=>t.dispose()))}}
 const tvCan=document.createElement('canvas');tvCan.width=128;tvCan.height=96;const tvCtx=tvCan.getContext('2d');
 const tTV=new THREE.CanvasTexture(tvCan);tTV.minFilter=THREE.LinearFilter;tTV.generateMipmaps=false;
